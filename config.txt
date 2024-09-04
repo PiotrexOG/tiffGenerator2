@@ -1,0 +1,149 @@
+#zmien nazwe tego pliku na .ExifTool_config i umieść go w swoim katalogu domowym (naprzyklad wewnątrz Users\twoja_nazwa_uzytkownika\
+
+%Image::ExifTool::UserDefined = (
+    'Image::ExifTool::XMP::pdfx' => {
+	Nr_teczki => {
+    Writable => 'string',
+},
+Miejscowosc => {
+    Writable => 'string',
+},
+Nazwa_ulicy => {
+    Writable => 'string',
+},
+Numer_adresowy => {
+    Writable => 'string',
+},
+Numer_dzialki => {
+    Writable => 'string',
+},
+Obreb => {
+    Writable => 'string',
+},
+Opis => {
+    Writable => 'string',
+},
+Numer_uzgodnienia => {
+    Writable => 'string',
+},
+Data_uzgodnienia => {
+    Writable => 'string',
+},
+Data_projektu => {
+    Writable => 'string',
+},
+Inwestor => {
+    Writable => 'string',
+},
+Data_dokumentu => {
+    Writable => 'string',
+},
+Dlugosc => {
+    Writable => 'string',
+},
+Material => {
+    Writable => 'string',
+},
+Srednica => {
+    Writable => 'string',
+},
+Rodzaj_sieci => {
+    Writable => 'string',
+},
+Numer_inwentarzowy => {
+    Writable => 'string',
+},
+
+    },
+
+ 'Image::ExifTool::Exif::Main' => {
+        0xd002 => {
+            Name => 'Nr_teczki',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd003 => {
+            Name => 'Miejscowosc',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd004 => {
+            Name => 'Nazwa_ulicy',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd005 => {
+            Name => 'Numer_adresowy',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd006 => {
+            Name => 'Numer_dzialki',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd007 => {
+            Name => 'Obreb',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd008 => {
+            Name => 'Opis',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd009 => {
+            Name => 'Numer_uzgodnienia',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd00a => {
+            Name => 'Data_uzgodnienia',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd00b => {
+            Name => 'Data_projektu',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd00c => {
+            Name => 'Inwestor',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd00d => {
+            Name => 'Data_dokumentu',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd00e => {
+            Name => 'Dlugosc',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd00f => {
+            Name => 'Material',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd010 => {
+            Name => 'Srednica',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd011 => {
+            Name => 'Rodzaj_sieci',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        },
+        0xd012 => {
+            Name => 'Numer_inwentarzowy',
+            Writable => 'string',
+            WriteGroup => 'IFD0',
+        }
+    }
+);
+
+
+1;  # To jest wymagane na końcu pliku
