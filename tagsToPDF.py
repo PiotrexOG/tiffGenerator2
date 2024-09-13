@@ -68,23 +68,23 @@ def generate_random_date(start_year=2020, end_year=2024):
 
 def randInfo(X, digits):
     info = {
-        'Nr_teczki': f"{Ids[ord(X) - ord('A')]}{digits}",
-        'Miejscowosc': random.choice(miasta),
-        'Nazwa_ulicy': random.choice(ulice),
-        'Numer_adresowy': random.randint(0, 1000),
-        'Numer_dzialki': random.randint(0, 1000),
-        'Obreb': random.choice(obreby),
-        'Opis': ' ',
-        'Numer_uzgodnienia': f"UD-{random.randint(0, 2000)}.{random.randint(1,10)}/{random.randint(2018, 2023)}",
-        'Data_uzgodnienia': generate_random_date(),
-        'Data_projektu': generate_random_date(),
-        'Inwestor': random.choice(inwestorzy),
-        'Data_dokumentu': generate_random_date(),
-        'Dlugosc': random.randint(0, 100),
-        'Material': random.choice(materialy),
-        'Srednica': random.choice(rodzaje_srednic),
-        'Rodzaj_sieci': random.choice(rodzaje_sieci),
-        'Numer_inwentarzowy': random.randint(0, 100)
+        # 'Nr_teczki': f"{Ids[ord(X) - ord('A')]}{digits}",
+        # 'Miejscowosc': random.choice(miasta),
+        # 'Nazwa_ulicy': random.choice(ulice),
+        # 'Numer_adresowy': random.randint(0, 1000),
+        # 'Numer_dzialki': random.randint(0, 1000),
+        # 'Obreb': random.choice(obreby),
+        'Opis': 'Long#13@5/21@5/48@7/8&713,Short#6@36/27&719@7/8&713,Wide#19@216/2@540&0010,Narrow#3@257/4@323@324&0012',
+        # 'Numer_uzgodnienia': f"UD-{random.randint(0, 2000)}.{random.randint(1,10)}/{random.randint(2018, 2023)}",
+        # 'Data_uzgodnienia': generate_random_date(),
+        # 'Data_projektu': generate_random_date(),
+        # 'Inwestor': random.choice(inwestorzy),
+        # 'Data_dokumentu': generate_random_date(),
+        # 'Dlugosc': random.randint(0, 100),
+        # 'Material': random.choice(materialy),
+        # 'Srednica': random.choice(rodzaje_srednic),
+        # 'Rodzaj_sieci': random.choice(rodzaje_sieci),
+        # 'Numer_inwentarzowy': random.randint(0, 100)
     }
     return info
 
