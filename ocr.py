@@ -11,6 +11,8 @@ keyword_patterns = [
     r"\bdziałk.*(?:\b [0-9]+\b|\b [0-9]+/[0-9]+\b)",  # "działk" połączone z liczbą lub liczba/liczba
     r"\bposes.*(?:\b [0-9]+[a-z]\b|\b [0-9]+[a-z]/[0-9]+\b)",  # "poses"
     r"\bob\.",  # "ob."
+    r"\bobr\.",  # "ob."
+    r"\bobr",  # "ob."
     r"\bobręb",  # "obręb"
 ]
 
@@ -134,7 +136,7 @@ def rozbij_dzialki(dane):
 
 def podziel_na_ulice_od_drugiego(text):
     # Wzorzec do znajdywania słów oznaczających początek nowego adresu ulicy
-    ulica_pattern = r"(?=\bul\b|\bul\.\b|ulic\w*)"
+    ulica_pattern = r"(?=\bul\b|\bul\.\b|ulic\w*|\bui\b|\bui\.\b)"
 
     # Znajdź wszystkie wystąpienia wzorca
     wystapienia = list(re.finditer(ulica_pattern, text, flags=re.IGNORECASE))
@@ -161,7 +163,7 @@ def przetworz_filtered_lines(filtered_lines):
 
     for linia in filtered_lines:
         # Sprawdź, czy linia zawiera wzorzec ulicy
-        if re.search(r"\bul\b|\bul\.\b|ulic\w*", linia, flags=re.IGNORECASE):
+        if re.search(r"\bul\b|\bul\.\b|ulic\w*|\bui\b|\bui\.\b", linia, flags=re.IGNORECASE):
             # Podziel linię i dodaj do nowej listy
             podzielone = podziel_na_ulice_od_drugiego(linia)
             nowa_lista.extend(podzielone)
@@ -180,39 +182,56 @@ def rozpoznaj_adresy(file_path):
 
     for page_num, page in enumerate(pages, start=1):
         text = pytesseract.image_to_string(page, lang='pol')  # pol -> język polski
+        #print(text)
 
         # Wyciąganie połączonych linii spełniających kryteria
         matching_lines = extract_combined_lines_with_criteria(text, keyword_patterns)
 
         # Filtrowanie linii, zawierających niechciane wzorce regex
         filtered_lines = filter_out_lines_with_regex(matching_lines, unwanted_regex_patterns)
-        ulica_patterns2 = [r"(?:\bul\b|\bul\.\b|ulic\w*)"]
+        ulica_patterns2 = [r"(?:\bul\b|\bul\.\b|ulic\w*|\bui\b|\bui\.\b)"]
 
         # Drukowanie przefiltrowanych wyników
         if filtered_lines:
             found_adress = True
+            #print(filtered_lines)
             przetworzone_linie = przetworz_filtered_lines(filtered_lines)
             print(f"--- Dopasowane i przefiltrowane linie na stronie {page_num} ---")
 
             for line in przetworzone_linie:
+             #  print(line)
                 extracted_info = adressREGEX.extract_info(line)
 
                 # Rozpakowujemy każdy słownik z listy i dodajemy go osobno do `results`
                 for info in extracted_info:
-                    results.append(info)
+                    # print(info)
+                    # print('siema')
+                    if not any(existing_item == info for existing_item in results):
+                        results.append(info)
 
     if not found_adress:
         siema = extract_combined_lines_with_criteria(text, ulica_patterns2)
-        print(f"--- DUPA BYLA i przefiltrowane linie na stronie {page_num} ---")
-        for line in siema:
-            print(line)
-            print("\n" + "-" * 40 + "\n")
+        przetworzone_linie = przetworz_filtered_lines(siema)
+        print(f"--- Dopasowane i przefiltrowane linie na stronie {page_num} ---")
+
+        for line in przetworzone_linie:
+           # print(line)
+            extracted_info = adressREGEX.extract_info(line)
+
+            # Rozpakowujemy każdy słownik z listy i dodajemy go osobno do `results`
+            for info in extracted_info:
+                results.append(info)
+        # print(f"--- DUPA BYLA i przefiltrowane linie na stronie {page_num} ---")
+        # for line in siema:
+        #     print(line)
+        #     print("\n" + "-" * 40 + "\n")
 
     if results:
         results = filtruj_dane(results)
         results = rozbij_dzialki(results)
+
         for res in results:
             print(res)
-
+        return results
 
 

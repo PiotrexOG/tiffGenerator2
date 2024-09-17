@@ -5,6 +5,9 @@ import os
 import subprocess
 import json
 import ocr
+import threading
+import validate
+
 
 # Przygotowany kod do dodawania tagów EXIF
 def add_exif_data(dest_file_path, exif_data, new_file_name):
@@ -52,21 +55,50 @@ class Application(tk.Tk):
         self.skip_empty = 1
 
         # Dane dla dynamicznej listy adresów
-        self.data = [
-            {'Miejscowość': 'Warszawa', 'Nazwa_ulicy': 'Worcella', 'Numer_adresowy': '13', 'Obręb': '713',
-             'Numer_działki': '5/21,5/48,7/8'},
-            {'Miejscowość': 'Gdańsk', 'Nazwa_ulicy': 'Bitwy Pod Lenino', 'Numer_adresowy': '6', 'Obręb': '719',
-             'Numer_działki': '36/27'},
-            {'Miejscowość': 'Gdańsk', 'Nazwa_ulicy': 'Bitwy Pod Lenino', 'Numer_adresowy': '6', 'Obręb': '713',
-             'Numer_działki': '7/8'},
-            {'Miejscowość': 'Kraków', 'Nazwa_ulicy': 'Liczmańskiego', 'Numer_adresowy': '19', 'Obręb': '0010',
-             'Numer_działki': '216/2,540'},
-            {'Miejscowość': 'Gdynia', 'Nazwa_ulicy': 'Bażyńskiego', 'Numer_adresowy': '3', 'Obręb': '0012',
-             'Numer_działki': '257/4,323,324'}
-        ]
+        self.data = []
 
         self.entries = []  # Lista na widgety do wpisywania danych
+        self.dynamic_widgets = []
         self.create_widgets()
+
+    def update_address_fields(self, result):
+        """Aktualizowanie pól dynamicznych po zakończeniu OCR."""
+        # Zaktualizuj dane
+        self.data = result
+
+        # Usuwamy poprzednie dynamiczne wiersze, jeśli istnieją
+        for widget_dict in self.dynamic_widgets:
+            for widget in widget_dict.values():
+                widget.destroy()  # Usuwamy wszystkie widgety z GUI
+
+        self.dynamic_widgets = []  # Resetujemy listę dynamicznych widgetów
+
+        # Dynamiczna lista adresów
+        tk.Label(self, text="Adresy:").grid(row=7, column=0, pady=50, sticky="w")
+        fields_dynamic = ["Ulica", "Numer_adresowy", "Numer_działki", "Obręb"]
+        if result:
+            for i, item in enumerate(self.data):
+                row_entries = {}
+
+                entry = tk.Entry(self, width=20)
+                entry.grid(row=8 + i, column=0, padx=10, pady=5, sticky="w")
+                entry.insert(0, "Gdańsk")  # Wpisujemy wartości
+                row_entries["Miejscowość"] = entry
+
+                col = 1
+                for field in fields_dynamic:
+                    entry = tk.Entry(self, width=20)
+                    entry.grid(row=8 + i, column=col, padx=10, pady=5, sticky="w")
+                    entry.insert(0, item[field.split()[0]])  # Wpisujemy wartości
+                    row_entries[field] = entry
+                    col += 1
+
+                # Tworzymy przycisk i dodajemy go do słownika dynamicznych widgetów
+                button = tk.Button(self, text="Pokaż", command=lambda e=row_entries: self.print_row(e))
+                button.grid(row=8 + i, column=col, padx=10, pady=5)
+                row_entries["Pokaż"] = button  # Dodajemy przycisk do row_entries
+
+                self.dynamic_widgets.append(row_entries)  # Dodajemy cały wiersz (w tym przycisk) do dynamic_widgets
 
     def create_widgets(self):
         # Wybór pliku
@@ -200,11 +232,38 @@ class Application(tk.Tk):
 
     def print_row(self, row_entries):
         """Funkcja do wyświetlania w konsoli danych z dynamicznego wiersza."""
-        # result = {key: entry.get() for key, entry in row_entries.items()}
-        # print("Wiersz dynamiczny:", result)
+        result = {}
+        for key, widget in row_entries.items():
+            if isinstance(widget, tk.Entry):  # Sprawdzamy, czy widget jest polem Entry
+                result[key] = widget.get()
+                  # Pobieramy wartość z pola Entry
 
-        print("sciezka:", self.file_path)
-        ocr.rozpoznaj_adresy(self.file_path)
+                # Zmiana obramowania na grube i w innym kolorze
+                #widget.config(highlightbackground="green", highlightthickness=2)
+        print("Wiersz dynamiczny:", result)
+        row_entries["Ulica"]
+        ulica = result["Ulica"]
+        znaleziona_ulica = validate.znajdz_ulice(ulica)
+        if znaleziona_ulica is not None:
+            row_entries["Ulica"].config(highlightbackground="green", highlightthickness=2)
+            if znaleziona_ulica[1] != "":
+                print("Zmieniamy wartość pola 'Ulica' na:", znaleziona_ulica[1])
+
+                # Modyfikujemy zawartość pola Entry
+                row_entries["Ulica"].delete(0, tk.END)  # Usuwamy starą zawartość pola
+                row_entries["Ulica"].insert(0, znaleziona_ulica[1])  # Wstawiamy nową wartość
+            if znaleziona_ulica[0] != "":
+                adresy_data = validate.pobierz_adresy(znaleziona_ulica[0])
+                if not adresy_data:
+                    messagebox.showwarning("Bład połączenia", "Nie można zweryfikować poprawności numeru adresowego")
+
+                adres = validate.znajdz_adres(result["Numer_adresowy"], adresy_data)
+                if not adres:
+                    messagebox.showwarning("Bład ", "Nie znalezionego pasującego numeru dla podanej ulicy")
+        else:
+            row_entries["Ulica"].config(highlightbackground="red", highlightthickness=2)
+        # print("sciezka:", self.file_path)
+        # ocr.rozpoznaj_adresy(self.file_path)
 
     def apply_tags(self):
         if not self.file_path:
@@ -283,6 +342,15 @@ class Application(tk.Tk):
         self.file_path = filedialog.askopenfilename(filetypes=[("TIFF files", "*.tiff"), ("PDF files", "*.pdf")])
         if self.file_path:
             messagebox.showinfo("Wybrano plik", f"Wybrano plik: {self.file_path}")
+            threading.Thread(target=self.process_ocr, daemon=True).start()
+
+    def process_ocr(self):
+        """Funkcja do przetwarzania OCR."""
+        # Uruchom OCR i uzyskaj wynik (może to potrwać kilka sekund)
+        result = ocr.rozpoznaj_adresy(self.file_path)
+
+        # Po zakończeniu OCR wywołaj funkcję do aktualizacji GUI
+        self.after(0, self.update_address_fields, result)
 
     def update_doc_type(self, value):
         self.doc_type_var.set('')  # Resetowanie wyboru w `Typ dokumentacji`
