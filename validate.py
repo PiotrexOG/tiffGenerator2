@@ -100,10 +100,10 @@ def waliduj_adres(nazwa_ulicy, numer_adresowy, obreb, numer_dzialki):
         return "Adres istnieje i działka istnieje."
     return "Adres istnieje, ale działka nie istnieje."
 
-ulica = "Wałowa"
-numer_adresowy = "15"
-obreb = "0719"
-numer_dzialki = "36/27"
-
-info = waliduj_adres(ulica,numer_adresowy,obreb,numer_dzialki)
-print (info)
+# ulica = "Wałowa"
+# numer_adresowy = "15"
+# obreb = "0719"
+# numer_dzialki = "36/27"
+#
+# info = waliduj_adres(ulica,numer_adresowy,obreb,numer_dzialki)
+# print (info)

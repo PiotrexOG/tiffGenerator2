@@ -21,7 +21,7 @@ def extract_info(text):
     match = re.search(ulica_patterns, text)
     if match:
         ulica = match.group(1).strip().title()  # Konwersja do tytułowego formatu (pierwsza litera wielka)
-        numer_adresowy = match.group(2).strip()
+        numer_adresowy = match.group(2).strip().upper()
 
     if not ulica:
         # Nazwa ulicy (obowiązkowa)
@@ -33,7 +33,7 @@ def extract_info(text):
     if not numer_adresowy:
         numer_adresowy_pattern = r"poses[^d]*(?!dz\.?\s)\b(\d+\s?[a-zA-Z]?)\b"
         match_numer_adresowy = re.search(numer_adresowy_pattern, text)
-        numer_adresowy = match_numer_adresowy.group(1).strip() if match_numer_adresowy else "brak"
+        numer_adresowy = match_numer_adresowy.group(1).strip().upper() if match_numer_adresowy else "brak"
 
     # Znajdź wszystkie wystąpienia obrębów
     obreb_matches = list(re.finditer(obreb_pattern, text))
@@ -73,7 +73,7 @@ def extract_info(text):
         # Numer adresowy (opcjonalny)
         numer_adresowy_pattern = r"poses.*?(\d+\s?[a-zA-Z]?)"
         match_numer_adresowy = re.search(numer_adresowy_pattern, text)
-        numer_adresowy = match_numer_adresowy.group(1).strip() if match_numer_adresowy else "brak"
+        numer_adresowy = match_numer_adresowy.group(1).strip().upper() if match_numer_adresowy else "brak"
 
         # Numer działki (obowiązkowy)
         dzialka_pattern = r"(?:\bdz\b|\bdz\.\b|dział\w*)[^\d]*(\d+(?:/\d+)?(?:[^\w]+\d+(?:/\d+)?)*).*"

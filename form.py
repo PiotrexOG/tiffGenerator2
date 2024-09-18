@@ -63,17 +63,16 @@ class Application(tk.Tk):
 
     def update_address_fields(self, result):
         """Aktualizowanie pól dynamicznych po zakończeniu OCR."""
-        # Zaktualizuj dane
         self.data = result
 
         # Usuwamy poprzednie dynamiczne wiersze, jeśli istnieją
         for widget_dict in self.dynamic_widgets:
             for widget in widget_dict.values():
-                widget.destroy()  # Usuwamy wszystkie widgety z GUI
+                if isinstance(widget, tk.Widget):  # Sprawdzamy, czy jest to widget, a nie string
+                    widget.destroy()
 
-        self.dynamic_widgets = []  # Resetujemy listę dynamicznych widgetów
+        self.dynamic_widgets = []
 
-        # Dynamiczna lista adresów
         tk.Label(self, text="Adresy:").grid(row=7, column=0, pady=50, sticky="w")
         fields_dynamic = ["Ulica", "Numer_adresowy", "Numer_działki", "Obręb"]
         if result:
@@ -82,23 +81,32 @@ class Application(tk.Tk):
 
                 entry = tk.Entry(self, width=20)
                 entry.grid(row=8 + i, column=0, padx=10, pady=5, sticky="w")
-                entry.insert(0, "Gdańsk")  # Wpisujemy wartości
+                entry.insert(0, "Gdańsk")
                 row_entries["Miejscowość"] = entry
+                row_entries["Miejscowość_old"] = entry.get()  # Przechowujemy starą wartość
 
                 col = 1
                 for field in fields_dynamic:
                     entry = tk.Entry(self, width=20)
                     entry.grid(row=8 + i, column=col, padx=10, pady=5, sticky="w")
-                    entry.insert(0, item[field.split()[0]])  # Wpisujemy wartości
+                    entry.insert(0, item[field.split()[0]])
                     row_entries[field] = entry
+                    row_entries[field + "_old"] = entry.get()  # Przechowujemy starą wartość
                     col += 1
 
-                # Tworzymy przycisk i dodajemy go do słownika dynamicznych widgetów
-                button = tk.Button(self, text="Pokaż", command=lambda e=row_entries: self.print_row(e))
-                button.grid(row=8 + i, column=col, padx=10, pady=5)
-                row_entries["Pokaż"] = button  # Dodajemy przycisk do row_entries
+                # Przycisk Waliduj
+                button_validate = tk.Button(self, text="Waliduj", command=lambda e=row_entries: self.validate_adress(e))
+                button_validate.grid(row=8 + i, column=col, padx=10, pady=5)
+                row_entries["Waliduj"] = button_validate
 
-                self.dynamic_widgets.append(row_entries)  # Dodajemy cały wiersz (w tym przycisk) do dynamic_widgets
+                # Dodajemy pusty przycisk Zatwierdź na początku
+                button_confirm = tk.Button(self, text="Zatwierdź",
+                                           command=lambda e=row_entries: self.confirm_address(e))
+                button_confirm.grid(row=8 + i, column=col + 1, padx=10, pady=5)
+                button_confirm.grid_remove()  # Na początku ukrywamy przycisk
+                row_entries["Zatwierdź"] = button_confirm
+
+                self.dynamic_widgets.append(row_entries)
 
     def create_widgets(self):
         # Wybór pliku
@@ -134,35 +142,6 @@ class Application(tk.Tk):
             entry.grid(row=row, column=col + 1, padx=10, pady=5, sticky="w")
 
             self.static_entries[tag_key] = entry
-
-        # Dynamiczna lista adresów
-        tk.Label(self, text="Adresy:").grid(row=7, column=0, pady=50, sticky="w")
-        fields_dynamic = ["Nazwa_ulicy", "Numer_adresowy", "Numer_działki", "Obręb"]
-
-        for i, item in enumerate(self.data):
-            row_entries = {}
-
-            entry = tk.Entry(self, width=20)
-            entry.grid(row=8 + i, column=0, padx=10, pady=5, sticky="w")
-            entry.insert(0, "Gdańsk")  # Wpisujemy wartości
-            row_entries["Miejscowość"] = entry
-
-            col = 1
-            for field in fields_dynamic:
-                entry = tk.Entry(self, width=20)
-                entry.grid(row=8 + i, column=col, padx=10, pady=5, sticky="w")
-                entry.insert(0, item[field.split()[0]])  # Wpisujemy wartości
-                row_entries[field] = entry
-                col += 1
-
-            tk.Button(self, text="Pokaż", command=lambda e=row_entries: self.print_row(e)).grid(row=8 + i, column=col,
-                                                                                                padx=10, pady=5)
-
-            self.entries.append(row_entries)
-
-
-
-
 
 
         # Pole wyboru Rodzaj sieci
@@ -230,40 +209,110 @@ class Application(tk.Tk):
             # Jeśli wpisane dane są nieprawidłowe, czyszczenie pola
             number_entry.delete(0, tk.END)
 
-    def print_row(self, row_entries):
-        """Funkcja do wyświetlania w konsoli danych z dynamicznego wiersza."""
+    def validate_adress(self, row_entries):
+        """Funkcja do wyświetlania i walidacji danych z dynamicznego wiersza."""
+
         result = {}
         for key, widget in row_entries.items():
             if isinstance(widget, tk.Entry):  # Sprawdzamy, czy widget jest polem Entry
-                result[key] = widget.get()
-                  # Pobieramy wartość z pola Entry
+                result[key] = widget.get()  # Pobieramy wartość z pola Entry
+                widget.config(highlightbackground="black", highlightthickness=0)
 
-                # Zmiana obramowania na grube i w innym kolorze
-                #widget.config(highlightbackground="green", highlightthickness=2)
         print("Wiersz dynamiczny:", result)
-        row_entries["Ulica"]
-        ulica = result["Ulica"]
+
+        # Pobranie danych z pól formularza
+        ulica = result.get("Ulica")
+        numer_adresowy = result.get("Numer_adresowy")
+        numer_dzialki = result.get("Numer_działki")
+        obreb = result.get("Obręb")
+
+        gmIdTeryt = "2261011"
+
+        # Walidacja ulicy
         znaleziona_ulica = validate.znajdz_ulice(ulica)
-        if znaleziona_ulica is not None:
+        if znaleziona_ulica:
             row_entries["Ulica"].config(highlightbackground="green", highlightthickness=2)
-            if znaleziona_ulica[1] != "":
+
+            # Aktualizacja pola "Ulica" jeśli znaleziono alternatywną nazwę
+            if znaleziona_ulica[1]:
                 print("Zmieniamy wartość pola 'Ulica' na:", znaleziona_ulica[1])
+                row_entries["Ulica"].delete(0, tk.END)
+                row_entries["Ulica"].insert(0, znaleziona_ulica[1])
 
-                # Modyfikujemy zawartość pola Entry
-                row_entries["Ulica"].delete(0, tk.END)  # Usuwamy starą zawartość pola
-                row_entries["Ulica"].insert(0, znaleziona_ulica[1])  # Wstawiamy nową wartość
-            if znaleziona_ulica[0] != "":
+            # Jeśli mamy ID ulicy i podano numer adresowy, walidujemy numer adresowy
+            if znaleziona_ulica[0] and numer_adresowy != "brak":
                 adresy_data = validate.pobierz_adresy(znaleziona_ulica[0])
-                if not adresy_data:
-                    messagebox.showwarning("Bład połączenia", "Nie można zweryfikować poprawności numeru adresowego")
 
-                adres = validate.znajdz_adres(result["Numer_adresowy"], adresy_data)
-                if not adres:
-                    messagebox.showwarning("Bład ", "Nie znalezionego pasującego numeru dla podanej ulicy")
+                if not adresy_data:
+                    messagebox.showwarning("Błąd połączenia", "Nie można zweryfikować poprawności numeru adresowego")
+                else:
+                    adres = validate.znajdz_adres(numer_adresowy, adresy_data)
+                    if not adres:
+                        messagebox.showwarning("Błąd", "Nie znaleziono pasującego numeru dla podanej ulicy")
+                        row_entries["Numer_adresowy"].config(highlightbackground="red", highlightthickness=2)
+                    else:
+                        gmIdTeryt = adres['adres']['gmIdTeryt']
+                        print (gmIdTeryt)
+                        row_entries["Numer_adresowy"].config(highlightbackground="green", highlightthickness=2)
+            else:
+                # Jeśli numer adresowy nie podano, kolorujemy pole na żółto
+                row_entries["Numer_adresowy"].config(highlightbackground="yellow", highlightthickness=2)
         else:
+            # Jeśli nie znaleziono ulicy, pole Ulica zostaje oznaczone na czerwono
             row_entries["Ulica"].config(highlightbackground="red", highlightthickness=2)
-        # print("sciezka:", self.file_path)
-        # ocr.rozpoznaj_adresy(self.file_path)
+
+        # Walidacja działki
+        if validate.sprawdz_dzialke(gmIdTeryt, obreb, numer_dzialki):
+            row_entries["Obręb"].config(highlightbackground="green", highlightthickness=2)
+            row_entries["Numer_działki"].config(highlightbackground="green", highlightthickness=2)
+        else:
+            row_entries["Obręb"].config(highlightbackground="red", highlightthickness=2)
+            row_entries["Numer_działki"].config(highlightbackground="red", highlightthickness=2)
+
+        button_confirm = row_entries["Zatwierdź"]
+        button_validate = row_entries["Waliduj"]
+        button_confirm.grid()
+        button_confirm.config(state="normal", bg="white")  # Odblokowanie przycisku Zatwierdź
+        button_validate.config(bg="SystemButtonFace")  # Resetowanie koloru przycisku Waliduj
+
+        # Przywróć stare wartości jako punkt odniesienia
+        for key, widget in row_entries.items():
+            if isinstance(widget, tk.Entry):
+                row_entries[key + "_old"] = widget.get()  # Aktualizujemy wartość początkową
+
+
+    def confirm_address(self, row_entries):
+        """Funkcja do zatwierdzania adresu i blokowania pól do edycji."""
+        # Sprawdzenie zmian przed zatwierdzeniem
+        for key, widget in row_entries.items():
+            if isinstance(widget, tk.Entry):
+                # Porównujemy z przechowaną starą wartością
+                print(row_entries[key + "_old"])
+                if widget.get() != row_entries[key + "_old"]:
+                    row_entries["Zatwierdź"].config(state="disabled", bg="lightgray")
+                    row_entries["Waliduj"].config(bg="yellow")
+                    return  # Przerwij, jeśli wykryto zmianę
+
+        # Zatwierdzanie - blokowanie pól i zmiana przycisku
+        for key, widget in row_entries.items():
+            if isinstance(widget, tk.Entry):
+                widget.config(state="disabled", bg="lightgray")
+
+        # Zmiana przycisku na "Edytuj"
+        button_confirm = row_entries["Zatwierdź"]
+        button_confirm.config(text="Edytuj", command=lambda e=row_entries: self.edit_address(e))
+
+    def edit_address(self, row_entries):
+        """Funkcja do odblokowywania pól do edycji."""
+        # Odblokowanie pól i zmiana tła na białe
+        for key, widget in row_entries.items():
+            if isinstance(widget, tk.Entry):
+                widget.config(state="normal", bg="white")
+
+        # Zmiana przycisku na "Zatwierdź"
+        button_confirm = row_entries["Zatwierdź"]
+        button_confirm.config(text="Zatwierdź", command=lambda e=row_entries: self.confirm_address(e))
+
 
     def apply_tags(self):
         if not self.file_path:
