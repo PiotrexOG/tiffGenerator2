@@ -7,14 +7,11 @@ secondA = ["Projekty tekstowe", "Projekty graficzne"]
 secondB = ["Zgłoszenie rozpoczęcia robót", "Notatki z robót zanikowych", "Szkice do robót zanikowych", "Wyniki badania wody", "Wyniki prób ciśnieniowych", "Niesklasyfikowane"]
 secondC = ["Protokoły odbioru końcowego sieci wodociągowej","Protokoły odbioru sieci kanalizacji sanitarnej", "Protokoły odbioru końcowego przyłączy","Mapy pomiaru powykonawczego sieci", "Mapy pomiaru powykonawczego przyłaczy","Niesklasyfikowane"]
 secondD = ["Dokumenty niesklasyfikowane"]
-fields = [
-    ("Nr teczki", "Nr_teczki"),
+fields =[
+    ("Inwestor", "Inwestor"),
     ("Opis", "Opis"),
     ("Numer uzgodnienia", "Numer_uzgodnienia"),
-    ("Inwestor", "Inwestor"),
-    ("Długość", "Dlugosc"),
-    ("Średnica", "Srednica"),
-    ("Numer inwentarzowy", "Numer_inwentarzowy"),
+    ("Numer inwentarzowy", "Numer_inwentarzowy")
 ]
 
 dates = [        ("Data uzgodnienia", "Data_uzgodnienia"),
