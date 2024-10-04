@@ -85,7 +85,7 @@ class Application(TkinterDnD.Tk):
 
 
         button_add_row = tk.Button(self, text="Dodaj nowy", command=self.add_new_row)
-        button_add_row.grid(row=7, column=9, padx=5, pady=5)
+        button_add_row.grid(row=8, column=6, padx=5, pady=5)
 
     def on_drop(self, event):
         self.file_path = event.data
@@ -168,17 +168,17 @@ class Application(TkinterDnD.Tk):
 
         # Dodanie przycisków "Waliduj" i "Zatwierdź"
         button_validate = tk.Button(self, text="Waliduj", command=lambda e=row_entries: self.validate_address(e))
-        button_validate.grid(row=9 + row_index, column=col, padx=10, pady=5)
+        button_validate.grid(row=9 + row_index, column=col, padx=5, pady=5)
         row_entries["Waliduj"] = button_validate
 
         button_confirm = tk.Button(self, text="Zatwierdź", command=lambda e=row_entries: self.confirm_address(e))
-        button_confirm.grid(row=9 + row_index, column=col + 1, padx=10, pady=5)
+        button_confirm.grid(row=9 + row_index, column=col + 1, padx=5, pady=5)
         button_confirm.grid_remove()
         row_entries["Zatwierdź"] = button_confirm
 
         # Dodanie przycisku "Usuń"
         button_delete = tk.Button(self, text="Usuń", command=lambda e=row_entries: self.delete_row(e))
-        button_delete.grid(row=9 + row_index, column=col + 2, padx=10, pady=5)
+        button_delete.grid(row=9 + row_index, column=col + 2, padx=5, pady=5)
         row_entries["Usuń"] = button_delete
 
         self.dynamic_widgets.append(row_entries)
