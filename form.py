@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinterdnd2 import TkinterDnD, DND_FILES
 from tkinter import filedialog, messagebox
 import os
 import material_dictionary
@@ -6,7 +7,8 @@ import diameter_dictionary
 import filename_generator
 import ocr
 import threading
-
+from PIL import Image, ImageTk
+from pdf2image import convert_from_path
 from filename_generator import dates
 from validate import Validator
 from exif_manager import ExifManager
@@ -14,7 +16,7 @@ from datetime import datetime
 import concurrent.futures
 
 # GUI z Tkinter
-class Application(tk.Tk):
+class Application(TkinterDnD.Tk):
 
     ROW_PAD = 7
     COL_PAD = 5
@@ -60,48 +62,148 @@ class Application(tk.Tk):
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.future = None
 
+        # Dodajemy pole do przeciągania i upuszczania plików
+        self.drop_label = tk.Label(self,
+                                   text="Przeciągnij plik tutaj",
+                                   bg="lightgray",  # kolor tła
+                                   fg="blue",  # kolor tekstu
+                                   highlightbackground="red",  # kolor ramki
+                                   highlightthickness=2,  # grubość ramki
+                                   padx=20, pady=20)  # odstępy wewnętrzn
+        self.drop_label.grid(row=0, column=3, padx=10, pady=5)
+
+        # Rejestrujemy pole jako obszar do przeciągania plików
+        self.drop_label.drop_target_register(DND_FILES)
+        self.drop_label.dnd_bind('<<Drop>>', self.on_drop)
+
+        # Obszar wyświetlania miniaturki
+        self.thumbnail_label = tk.Label(self)
+        self.thumbnail_label.grid(row=0, column=5, padx=10, pady=5)
+
+        self.filename_label = tk.Label(self)
+        self.filename_label.grid(row=0, column=6, padx=10, pady=5)
+
+
+        button_add_row = tk.Button(self, text="Dodaj nowy", command=self.add_new_row)
+        button_add_row.grid(row=7, column=9, padx=5, pady=5)
+
+    def on_drop(self, event):
+        self.file_path = event.data
+        # self.drop_area.delete(0, tk.END)
+        # self.drop_area.insert(0, self.file_path)
+
+        # Wyświetlanie miniaturki
+        self.display_thumbnail(self.file_path)
+
+
+    def display_thumbnail(self, file_path):
+        file_extension = os.path.splitext(file_path)[1].lower()
+
+        if file_extension == '.tiff' or file_extension == '.tif':
+            # Obsługa pliku TIFF
+            image = Image.open(file_path)
+            image.thumbnail((200, 200))  # Zmniejsz obraz do miniaturki
+            photo = ImageTk.PhotoImage(image)
+
+        elif file_extension == '.pdf':
+            # Obsługa pliku PDF - konwersja pierwszej strony na obraz
+            images = convert_from_path(file_path, first_page=0, last_page=1)
+            image = images[0]
+            width, height = image.size
+            new_height = int(height * 0.3)  # Ustaw wysokość na 30% oryginalnej
+            cropped_image = image.crop((0, 0, width, new_height))
+
+            # Zmniejszenie obrazu do wyświetlenia jako miniaturka
+            cropped_image.thumbnail((350, 700))  # Miniaturka zachowująca szerokość
+            photo = ImageTk.PhotoImage(cropped_image)
+
+            threading.Thread(target=self.process_ocr, daemon=True).start()
+
+        else:
+            # Obsługa nieznanych typów plików
+            self.thumbnail_label.config(text="Nieobsługiwany format pliku.")
+            return
+
+        # Wyświetlanie obrazu w Label
+        self.thumbnail_label.config(image=photo)
+        filename = os.path.basename(self.file_path)
+        self.filename_label.config(text=filename)
+        self.thumbnail_label.image = photo  # Zapisanie referencji, aby nie usunąć obrazu z pamięci
+
     def update_address_fields(self, result):
         self.data = result
 
+        # Czyszczenie poprzednich widgetów
         for widget_dict in self.dynamic_widgets:
             for widget in widget_dict.values():
-                if isinstance(widget, tk.Widget):  # Sprawdzamy, czy jest to widget, a nie string
+                if isinstance(widget, tk.Widget):
                     widget.destroy()
+            del widget_dict
 
         self.dynamic_widgets = []
 
-        tk.Label(self, text="Adresy:").grid(row=7, column=0, pady=50, sticky="w")
-        fields_dynamic = ["Ulica", "Numer_adresowy", "Numer_działki", "Obręb"]
+        fields_dynamic = ["Ulica", "Numer_adresowy", "Obręb", "Numer_działki"]
+
         if result:
             for i, item in enumerate(self.data):
-                row_entries = {}
+                self.add_row(i, item, fields_dynamic)
 
-                entry = tk.Entry(self, width=20)
-                entry.grid(row=8 + i, column=0, padx=10, pady=5, sticky="w")
-                entry.insert(0, "Gdańsk")
-                row_entries["Miejscowość"] = entry
-                row_entries["Miejscowość_old"] = entry.get()  # Przechowujemy starą wartość
+    def add_row(self, row_index, item, fields_dynamic):
+        row_entries = {}
 
-                col = 1
-                for field in fields_dynamic:
-                    entry = tk.Entry(self, width=20)
-                    entry.grid(row=8 + i, column=col, padx=10, pady=5, sticky="w")
-                    entry.insert(0, item[field.split()[0]])
-                    row_entries[field] = entry
-                    row_entries[field + "_old"] = entry.get()  # Przechowujemy starą wartość
-                    col += 1
+        entry = tk.Entry(self, width=20)
+        entry.grid(row=9 + row_index, column=0, padx=10, pady=5, sticky="w")
+        entry.insert(0, "Gdańsk")
+        row_entries["Miejscowość"] = entry
+        row_entries["Miejscowość_old"] = entry.get()
 
-                button_validate = tk.Button(self, text="Waliduj", command=lambda e=row_entries: self.validate_address(e))
-                button_validate.grid(row=8 + i, column=col, padx=10, pady=5)
-                row_entries["Waliduj"] = button_validate
+        col = 1
+        for field in fields_dynamic:
+            entry = tk.Entry(self, width=20)
+            entry.grid(row=9 + row_index, column=col, padx=10, pady=5, sticky="w")
+            entry.insert(0, item[field.split()[0]])
+            row_entries[field] = entry
+            row_entries[field + "_old"] = entry.get()
+            col += 1
 
-                button_confirm = tk.Button(self, text="Zatwierdź",
-                                           command=lambda e=row_entries: self.confirm_address(e))
-                button_confirm.grid(row=8 + i, column=col + 1, padx=10, pady=5)
-                button_confirm.grid_remove()  # Na początku ukrywamy przycisk
-                row_entries["Zatwierdź"] = button_confirm
+        # Dodanie przycisków "Waliduj" i "Zatwierdź"
+        button_validate = tk.Button(self, text="Waliduj", command=lambda e=row_entries: self.validate_address(e))
+        button_validate.grid(row=9 + row_index, column=col, padx=10, pady=5)
+        row_entries["Waliduj"] = button_validate
 
-                self.dynamic_widgets.append(row_entries)
+        button_confirm = tk.Button(self, text="Zatwierdź", command=lambda e=row_entries: self.confirm_address(e))
+        button_confirm.grid(row=9 + row_index, column=col + 1, padx=10, pady=5)
+        button_confirm.grid_remove()
+        row_entries["Zatwierdź"] = button_confirm
+
+        # Dodanie przycisku "Usuń"
+        button_delete = tk.Button(self, text="Usuń", command=lambda e=row_entries: self.delete_row(e))
+        button_delete.grid(row=9 + row_index, column=col + 2, padx=10, pady=5)
+        row_entries["Usuń"] = button_delete
+
+        self.dynamic_widgets.append(row_entries)
+
+    def add_new_row(self):
+        """Funkcja dodająca nowy pusty wiersz do formularza."""
+        new_row_index = len(self.dynamic_widgets)  # Nowy wiersz będzie na końcu
+        fields_dynamic = ["Ulica", "Numer_adresowy", "Numer_działki", "Obręb"]
+        print(new_row_index)
+        # Pusty słownik dla nowego wiersza
+        empty_item = {field.split()[0]: "" for field in fields_dynamic}
+        self.add_row(new_row_index, empty_item, fields_dynamic)
+
+    def delete_row(self, row_entries):
+        """Funkcja usuwająca wybrany wiersz i aktualizująca pozostałe."""
+        # Usuń widgety z interfejsu
+        for widget in row_entries.values():
+            if isinstance(widget, tk.Widget):
+                widget.destroy()
+
+        # Usuń wiersz z listy dynamicznych widgetów
+        del row_entries
+        # Przeładowanie pozostałych wierszy, aby zaktualizować pozycje
+
+
 
     def filter_materials(self, typed_text):
         return [material for material in self.valid_materials if
@@ -246,8 +348,7 @@ class Application(tk.Tk):
     def create_static_entries(self):
         fields = filename_generator.fields
         for i, (label_text, tag_key) in enumerate(fields):
-            self.create_labeled_entry(label_text, tag_key, row=(i % 2) + 3, column=(i // 2) * 2 + 5)
-            print (f"{(i % 2) + 8} oraz kolunmna {i//2}")
+            self.create_labeled_entry(label_text, tag_key, row=(i % 3) + 2, column=(i // 3) * 2 + 2)
 
     def create_labeled_entry(self, label_text, tag_key, row, column):
         tk.Label(self, text=label_text).grid(row=row, column=column, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
@@ -256,20 +357,20 @@ class Application(tk.Tk):
         self.static_entries[tag_key] = entry
 
     def create_material_selection_widgets(self):
-        tk.Label(self, text="Materiał").grid(row=10, column=10, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
-        self.material_entry.grid(row=10, column=11, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
-        self.listbox_material.grid(row=11, column=11, padx=self.COL_PAD, pady=self.ROW_PAD)
+        tk.Label(self, text="Materiał").grid(row=10, column=8, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
+        self.material_entry.grid(row=10, column=9, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
+        self.listbox_material.grid(row=11, column=9, padx=self.COL_PAD, pady=self.ROW_PAD)
         self.listbox_material.grid_remove()
 
     def create_diameter_selection_widgets(self):
-        tk.Label(self, text="Średnica").grid(row=12, column=10, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
-        self.diameter_entry.grid(row=12, column=11, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
-        self.listbox_diameter.grid(row=13, column=11, padx=self.COL_PAD, pady=self.ROW_PAD)
+        tk.Label(self, text="Średnica").grid(row=12, column=8, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
+        self.diameter_entry.grid(row=12, column=9, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
+        self.listbox_diameter.grid(row=13, column=9, padx=self.COL_PAD, pady=self.ROW_PAD)
         self.listbox_diameter.grid_remove()
 
     def create_lenght_selection_widgets(self):
-        tk.Label(self, text="Długość").grid(row=14, column=10, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
-        self.lenght_entry.grid(row=14, column=11, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
+        tk.Label(self, text="Długość").grid(row=14, column=8, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
+        self.lenght_entry.grid(row=14, column=9, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
 
     def bind_events(self):
         # Materiały
@@ -289,15 +390,14 @@ class Application(tk.Tk):
         self.bind('<Button-1>', self.on_click_outside)
 
     def create_rodzaj_sieci(self):
-        tk.Label(self, text="Rodzaj sieci:").grid(row=5, column=7, pady=10, sticky="w")
+        tk.Label(self, text="Rodzaj sieci:").grid(row=2, column=6, pady=10, sticky="w")
         rodzaj_sieci_menu = tk.OptionMenu(self, self.rodzaj_sieci_var, "wodociągowa", "kanalizacyjna", "wodociągowo-kanalizacyjna")
         rodzaj_sieci_menu.config(width=20)
-        rodzaj_sieci_menu.grid(row=5, column=8, pady=10, sticky="w")
+        rodzaj_sieci_menu.grid(row=2, column=7, pady=10, sticky="w")
 
     def create_date_entry(self):
         dates = filename_generator.dates
         for i, (label_text, tag_key) in enumerate(dates):
-            print(i)
             self.create_labeled_entry(label_text, tag_key, row=i+2, column=0)
             self.static_entries[tag_key].bind('<KeyRelease>', format_date_entry)
 
@@ -313,23 +413,28 @@ class Application(tk.Tk):
         self.dir_number_entry.bind("<KeyRelease>", lambda event: format_number(5, self.dir_number_entry))
 
     def create_documentation_widgets(self):
-        tk.Label(self, text="Rodzaj teczki dokumentów:").grid(row=1, column=4, pady=100, sticky="w")
+        tk.Label(self, text="Rodzaj teczki dokumentów:").grid(row=1, column=4, pady=20, sticky="w")
         self.folder_type_menu = tk.OptionMenu(self, self.folder_type_var, "EW", "EWP", "EWS", "EKS", "KSA", "PZO", "UL", "N",
                                          command=self.update_doc_type)
         self.folder_type_menu.grid(row=1, column=5, pady=50)
 
-        tk.Label(self, text="Typ dokumentacji:").grid(row=1, column=6, pady=100, sticky="w")
+        tk.Label(self, text="Typ dokumentacji:").grid(row=1, column=6, pady=20, sticky="w")
         self.doc_type_menu = tk.OptionMenu(self, self.doc_type_var, "", command=self.update_subgroup)
         self.doc_type_menu.grid(row=1, column=7, pady=50)
 
-        tk.Label(self, text="Podgrupa dokumentów:").grid(row=1, column=8, pady=100, sticky="w")
+        tk.Label(self, text="Podgrupa dokumentów:").grid(row=1, column=8, pady=20, sticky="w")
         self.subgroup_menu = tk.OptionMenu(self, self.subgroup_var, "")
         self.subgroup_menu.grid(row=1, column=9, pady=10)
 
     def create_widgets(self):
         self.create_file_selection_widgets()
         self.create_static_entries()
-        tk.Label(self, text="Adresy:").grid(row=7, column=0, pady=50, sticky="w")
+        tk.Label(self, text="Adresy:").grid(row=7, column=0, pady=5, sticky="w")
+        tk.Label(self, text="Miasto:").grid(row=8, column=0, pady=20, sticky="w")
+        tk.Label(self, text="Ulica:").grid(row=8, column=1, pady=20, sticky="w")
+        tk.Label(self, text="Numer adresowy:").grid(row=8, column=2, pady=20, sticky="w")
+        tk.Label(self, text="Numer obrębu:").grid(row=8, column=3, pady=20, sticky="w")
+        tk.Label(self, text="Numer działki:").grid(row=8, column=4, pady=20, sticky="w")
         self.create_material_selection_widgets()
         self.create_diameter_selection_widgets()
         self.create_lenght_selection_widgets()
@@ -473,6 +578,11 @@ class Application(tk.Tk):
             info['Srednica'] = self.diameter_entry.get()
             info['Dlugosc'] = self.lenght_entry.get()
 
+            address_structure = create_address_structure(self.dynamic_widgets)
+            formatted_result = format_address_structure(address_structure)
+
+            print(formatted_result)
+
             folderType = self.folder_type_var.get()
             groupType = self.doc_type_var.get()
             subGroupType = self.subgroup_var.get()
@@ -500,8 +610,10 @@ class Application(tk.Tk):
 
             # Przetwarzanie pliku w zależności od formatu
             if file_extension == ".tiff":
+                info['Artist'] = formatted_result
                 ExifManager.process_tiff(self.file_path, info, f"{new_file_name}.tiff")
             elif file_extension == ".pdf":
+                info['Adres'] = formatted_result
                 ExifManager.process_pdf(self.file_path, info, f"{new_file_name}.pdf")
             else:
                 messagebox.showerror("Błąd formatu", "Niewłaściwy format pliku. Wybierz TIFF lub PDF.")
@@ -513,8 +625,9 @@ class Application(tk.Tk):
             self.rodzaj_sieci_var.set('')  # Wyczyść zmienną rodzaju sieci
             file_number_text = self.file_number_entry.get()
             new_file_number = int(file_number_text) + 1
+
             self.file_number_entry.delete(0, 'end')  # Wyczyść numer pliku
-            self.file_number_entry.insert(0, f"{new_file_number}")  # Wyczyść numer pliku
+            self.file_number_entry.insert(0, f"{new_file_number:03d}")
 
         # except Exception as e:
         #         messagebox.showerror("Błąd tagowania", f"Wystąpił problem: {e}")
@@ -539,7 +652,8 @@ class Application(tk.Tk):
     def choose_file(self):
         self.file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf"),("TIFF files", "*.tiff")])
         if self.file_path:
-            threading.Thread(target=self.process_ocr, daemon=True).start()
+            self.display_thumbnail(self.file_path)
+
 
     def process_ocr(self):
         try:
@@ -630,6 +744,70 @@ def format_date_entry(event):
     entry.delete(0, tk.END)
     entry.insert(0, current_value)
 
-if __name__ == "__main__":
-    app = Application()
-    app.mainloop()
+def create_address_structure(rows):
+    address_tree = {}  # Główna struktura przechowująca dane
+
+    for row in rows:
+        city = row['Miejscowość'].get()
+        street = row['Ulica'].get()
+        number = row['Numer_adresowy'].get()
+        district = row['Obręb'].get()
+        plot = row['Numer_działki'].get()
+
+        # Sprawdzenie, czy miasto jest już w drzewie
+        if city not in address_tree:
+            address_tree[city] = {}
+
+        # Sprawdzenie, czy ulica jest już w danym mieście
+        if street not in address_tree[city]:
+            address_tree[city][street] = {}
+
+        # Sprawdzenie, czy numer adresowy jest już dla danej ulicy
+        if number not in address_tree[city][street]:
+            address_tree[city][street][number] = {}
+
+        # Sprawdzenie, czy obręb jest już dla danego numeru
+        if district not in address_tree[city][street][number]:
+            address_tree[city][street][number][district] = []
+
+        # Dodanie działki, jeśli jej jeszcze nie ma
+        if plot not in address_tree[city][street][number][district]:
+            address_tree[city][street][number][district].append(plot)
+
+    return address_tree
+
+
+def format_address_structure(address_structure):
+    formatted_output = []
+
+    for city, streets in address_structure.items():
+        city_part = city  # Miejscowość
+        street_parts = []
+
+        for street, numbers in streets.items():
+            street_part = '!' + street  # Ulica
+
+            number_parts = []
+            for number, districts in numbers.items():
+                number_part = '#' + number  # Numer_adresowy
+
+                district_parts = []
+                for district, plots in districts.items():
+                    district_part = '&' + district  # Obręb
+
+                    plot_parts = '@' + '@'.join(plots)  # Numer_działki
+
+                    district_parts.append(district_part + plot_parts)
+
+                number_parts.append(number_part + ''.join(district_parts))
+
+            street_parts.append(street_part + ''.join(number_parts))
+
+        formatted_output.append(city_part + ''.join(street_parts))
+
+    return ';'.join(formatted_output)
+
+
+
+app = Application()
+app.mainloop()

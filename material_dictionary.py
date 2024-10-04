@@ -1,10 +1,17 @@
 import pandas as pd
+import sys
+import os
 
 def normalize_name(name):
     return name[0].upper() + name[1:] if name else ''
 
 def get_dict():
-    file_path = r'C:\Users\pwwesolo\Documents\skoroszyt\baza.xlsx'
+    if getattr(sys, 'frozen', False):  # Jeśli aplikacja jest skompilowana
+        base_path = os.path.dirname(os.path.abspath(sys.executable))  # Ścieżka do folderu, gdzie jest .exe
+    else:
+        base_path = r'C:\Users\pwwesolo\Documents\skoroszyt'  # Ścieżka do folderu projektu (tryb deweloperski)
+
+    file_path = os.path.join(base_path, 'baza.xlsx')
 
     sheet_name = 'slownik_material'
 

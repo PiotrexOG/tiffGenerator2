@@ -9,9 +9,9 @@ secondC = ["Protokoły odbioru końcowego sieci wodociągowej","Protokoły odbio
 secondD = ["Dokumenty niesklasyfikowane"]
 fields =[
     ("Inwestor", "Inwestor"),
-    ("Opis", "Opis"),
     ("Numer uzgodnienia", "Numer_uzgodnienia"),
-    ("Numer inwentarzowy", "Numer_inwentarzowy")
+    ("Numer inwentarzowy", "Numer_inwentarzowy"),
+    ("Opis", "Opis")
 ]
 
 dates = [        ("Data uzgodnienia", "Data_uzgodnienia"),

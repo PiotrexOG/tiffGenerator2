@@ -2,7 +2,8 @@ import re
 import pytesseract
 from pdf2image import convert_from_path
 import adressREGEX
-
+import sys
+import os
 import re
 
 # Wzory słów kluczowych
@@ -24,6 +25,28 @@ unwanted_regex_patterns = [
     r'dz\. u\.',  # "dz. u."
 ]
 
+
+def _get_poppler_path():
+    if getattr(sys, 'frozen', False):  # Sprawdza, czy aplikacja działa w trybie zamrożonym (np. exe)
+        base_path = os.path.dirname(sys.executable)  # Folder z .exe
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))  # Folder z main.py
+        base_path = r'C:\Program Files'  # Folder z main.py
+
+    # Ścieżka do spakowanej wersji ExifTool
+    poppler_path = os.path.join(base_path, 'poppler', 'Library', 'bin')
+
+    return poppler_path
+
+def _get_tesseract_path():
+    if getattr(sys, 'frozen', False):
+        base_path = os.path.dirname(sys.executable)
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        base_path = r'C:\Program Files'  # Folder z main.py
+    tesseract_path = os.path.join(base_path, 'Tesseract-OCR', 'tesseract.exe')
+
+    return tesseract_path
 
 def extract_combined_lines_with_criteria(text, keyword_patterns):
     # Dzielimy tekst na linie
@@ -177,9 +200,10 @@ def rozpoznaj_adresy(file_path):
 # Wyciąganie tekstu z każdej strony
     found_adress = False
     results = []
+    pop_path = _get_poppler_path()
 # Konwersja PDF na obrazy
-    pages = convert_from_path(file_path, 300)  # 300 dpi dla dobrej jakości OCR
-
+    pages = convert_from_path(file_path, 300, poppler_path=pop_path)  # 300 dpi dla dobrej jakości OCR
+    pytesseract.pytesseract.tesseract_cmd = _get_tesseract_path()
     for page_num, page in enumerate(pages, start=1):
         text = pytesseract.image_to_string(page, lang='pol')  # pol -> język polski
         #print(text)
@@ -212,7 +236,7 @@ def rozpoznaj_adresy(file_path):
     if not found_adress:
         siema = extract_combined_lines_with_criteria(text, ulica_patterns2)
         przetworzone_linie = przetworz_filtered_lines(siema)
-        print(f"--- Dopasowane i przefiltrowane linie na stronie {page_num} ---")
+        print(f"--- nie znaleziono adresow ---")
 
         for line in przetworzone_linie:
            # print(line)
