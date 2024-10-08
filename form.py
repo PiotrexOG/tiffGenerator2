@@ -183,25 +183,59 @@ class Application(TkinterDnD.Tk):
 
         self.dynamic_widgets.append(row_entries)
 
-    def add_new_row(self):
-        """Funkcja dodająca nowy pusty wiersz do formularza."""
-        new_row_index = len(self.dynamic_widgets)  # Nowy wiersz będzie na końcu
+    def reposition_rows(self):
+        """Aktualizuje pozycje dynamicznych wierszy, przestawiając je po usunięciu wiersza."""
         fields_dynamic = ["Ulica", "Numer_adresowy", "Numer_działki", "Obręb"]
-        print(new_row_index)
+
+        # Przestaw wszystkie pozostałe wiersze na nowe pozycje w siatce
+        for i, row_entries in enumerate(self.dynamic_widgets):
+            # Ustawienie pozycji "Miejscowość"
+            row_entries["Miejscowość"].grid(row=9 + i, column=0, padx=10, pady=5, sticky="w")
+
+            col = 1
+            for field in fields_dynamic:
+                row_entries[field].grid(row=9 + i, column=col, padx=10, pady=5, sticky="w")
+                col += 1
+
+            # Ustawienie pozycji przycisków
+            row_entries["Waliduj"].grid(row=9 + i, column=col, padx=5, pady=5)
+            row_entries["Zatwierdź"].grid(row=9 + i, column=col + 1, padx=5, pady=5)
+            row_entries["Zatwierdź"].grid_remove()
+            row_entries["Usuń"].grid(row=9 + i, column=col + 2, padx=5, pady=5)
+
+    def add_new_row(self):
+        """Funkcja dodająca nowy pusty wiersz na końcu formularza."""
         # Pusty słownik dla nowego wiersza
+        fields_dynamic = ["Ulica", "Numer_adresowy", "Numer_działki", "Obręb"]
         empty_item = {field.split()[0]: "" for field in fields_dynamic}
-        self.add_row(new_row_index, empty_item, fields_dynamic)
+
+        # Dodaj nowy wiersz do danych
+        self.data.append(empty_item)
+
+        # Dodaj nowy wiersz do dynamicznych widgetów
+        self.add_row(len(self.dynamic_widgets), empty_item, fields_dynamic)
 
     def delete_row(self, row_entries):
-        """Funkcja usuwająca wybrany wiersz i aktualizująca pozostałe."""
-        # Usuń widgety z interfejsu
+        """Funkcja usuwająca wybrany wiersz i aktualizująca pozycje pozostałych."""
+        # Usuń widgety z interfejsu dla usuwanego wiersza
         for widget in row_entries.values():
             if isinstance(widget, tk.Widget):
-                widget.destroy()
+                widget.grid_forget()  # Usuwa widget z widoku, ale nie niszczy go
 
-        # Usuń wiersz z listy dynamicznych widgetów
-        del row_entries
-        # Przeładowanie pozostałych wierszy, aby zaktualizować pozycje
+        # Znajdź indeks usuwanego wiersza
+        row_index = None
+        for i, widget_dict in enumerate(self.dynamic_widgets):
+            if widget_dict == row_entries:
+                row_index = i
+                break
+
+        if row_index is not None:
+            # Usuń wiersz z danych i dynamicznych widgetów
+            del self.data[row_index]
+            self.dynamic_widgets.remove(row_entries)
+
+            # Przestaw pozostałe wiersze
+            self.reposition_rows()
 
 
 
@@ -443,7 +477,7 @@ class Application(TkinterDnD.Tk):
         self.create_dir_number_entry()
         self.create_documentation_widgets()
         self.create_date_entry()
-        tk.Button(self, text="Dodaj tagi", command=self.apply_tags).grid(row=7, column=10, columnspan=4, pady=20)
+        tk.Button(self, text="Dodaj tagi", command=self.apply_tags).grid(row=7, column=8, columnspan=4, pady=20)
 
     def validate_address(self, row_entries):
         """Rozpocznij proces walidacji i zmień przycisk na 'Anuluj'."""
