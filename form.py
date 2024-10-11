@@ -9,13 +9,15 @@ import ocr
 import threading
 from PIL import Image, ImageTk
 from pdf2image import convert_from_path
-from filename_generator import dates
 from validate import Validator
 from exif_manager import ExifManager
 from datetime import datetime
 import concurrent.futures
 
 # GUI z Tkinter
+
+
+
 class Application(TkinterDnD.Tk):
 
     ROW_PAD = 7
@@ -29,6 +31,14 @@ class Application(TkinterDnD.Tk):
         self.material_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
         self.lenght_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
         self.diameter_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
+        self.invesor_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
+        self.numer_uzgodnienia_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
+        self.data_uzgodnienia_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
+        self.data_projektu_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
+        self.data_dokumentu_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
+
+        self.thumbnail_label = tk.Label(self)
+        self.filename_label = tk.Label(self)
         self.title("Tagowanie plików TIFF/PDF")
         self.geometry("1920x1080")
 
@@ -43,16 +53,23 @@ class Application(TkinterDnD.Tk):
         self.rodzaj_sieci_var = tk.StringVar()
         self.file_number_entry = tk.Entry(self, width=30)
         self.dir_number_entry = tk.Entry(self, width=30)
+
         self.folder_type_var = tk.StringVar()
         self.doc_type_var = tk.StringVar()
         self.subgroup_var = tk.StringVar()
+        self.folder_type_menu = tk.OptionMenu(self, self.folder_type_var, "EW", "EWP", "EWS", "EKS", "KSA", "PZO", "UL","N",command=self.update_doc_type)
+        self.doc_type_menu = tk.OptionMenu(self, self.doc_type_var, "", command=self.update_subgroup)
+        self.subgroup_menu = tk.OptionMenu(self, self.subgroup_var, "")
+        self.folder_type_menu.grid(row=1, column=5, pady=50)
+        self.doc_type_menu.grid(row=1, column=7, pady=50)
+        self.subgroup_menu.grid(row=1, column=9, pady=10)
+        tk.OptionMenu(self, self.rodzaj_sieci_var, "wodociągowa", "kanalizacyjna", "wodociągowo-kanalizacyjna").grid(row=2, column=7, pady=10, sticky="w")
 
         self.entries = []  # Lista na widgety do wpisywania danych
-        self.static_entries = {}
         self.dynamic_widgets = []
         self.filtered_materials = []  # List to store filtered results
         self.filtered_diameters = []  # List to store filtered results
-        self.create_widgets()
+        self.create_widgets(None)
         self.bind_events()
         self.selected_index = None  # Reset selection
 
@@ -62,39 +79,9 @@ class Application(TkinterDnD.Tk):
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.future = None
 
-        # Dodajemy pole do przeciągania i upuszczania plików
-        self.drop_label = tk.Label(self,
-                                   text="Przeciągnij plik tutaj",
-                                   bg="lightgray",  # kolor tła
-                                   fg="blue",  # kolor tekstu
-                                   highlightbackground="red",  # kolor ramki
-                                   highlightthickness=2,  # grubość ramki
-                                   padx=20, pady=20)  # odstępy wewnętrzn
-        self.drop_label.grid(row=0, column=3, padx=10, pady=5)
-
-        # Rejestrujemy pole jako obszar do przeciągania plików
-        self.drop_label.drop_target_register(DND_FILES)
-        self.drop_label.dnd_bind('<<Drop>>', self.on_drop)
-
-        # Obszar wyświetlania miniaturki
-        self.thumbnail_label = tk.Label(self)
-        self.thumbnail_label.grid(row=0, column=5, padx=10, pady=5)
-
-        self.filename_label = tk.Label(self)
-        self.filename_label.grid(row=0, column=6, padx=10, pady=5)
-
-
-        button_add_row = tk.Button(self, text="Dodaj nowy", command=self.add_new_row)
-        button_add_row.grid(row=8, column=6, padx=5, pady=5)
-
     def on_drop(self, event):
         self.file_path = event.data
-        # self.drop_area.delete(0, tk.END)
-        # self.drop_area.insert(0, self.file_path)
-
-        # Wyświetlanie miniaturki
         self.display_thumbnail(self.file_path)
-
 
     def display_thumbnail(self, file_path):
         file_extension = os.path.splitext(file_path)[1].lower()
@@ -166,7 +153,6 @@ class Application(TkinterDnD.Tk):
             row_entries[field + "_old"] = entry.get()
             col += 1
 
-        # Dodanie przycisków "Waliduj" i "Zatwierdź"
         button_validate = tk.Button(self, text="Waliduj", command=lambda e=row_entries: self.validate_address(e))
         button_validate.grid(row=9 + row_index, column=col, padx=5, pady=5)
         row_entries["Waliduj"] = button_validate
@@ -176,7 +162,6 @@ class Application(TkinterDnD.Tk):
         button_confirm.grid_remove()
         row_entries["Zatwierdź"] = button_confirm
 
-        # Dodanie przycisku "Usuń"
         button_delete = tk.Button(self, text="Usuń", command=lambda e=row_entries: self.delete_row(e))
         button_delete.grid(row=9 + row_index, column=col + 2, padx=5, pady=5)
         row_entries["Usuń"] = button_delete
@@ -237,8 +222,6 @@ class Application(TkinterDnD.Tk):
             # Przestaw pozostałe wiersze
             self.reposition_rows()
 
-
-
     def filter_materials(self, typed_text):
         return [material for material in self.valid_materials if
                 any(word.lower().startswith(typed_text.lower()) for word in material.split())]
@@ -287,10 +270,14 @@ class Application(TkinterDnD.Tk):
     def on_click_outside(self, event):
         if event.widget not in [self.material_entry, self.listbox_material]:
             self.listbox_material.grid_remove()
-            self.check_entry()
-        dates = filename_generator.dates
-        if event.widget not in [self.static_entries[date[1]] for date in dates]:
-            self.check_entry_dates()
+            self.check_entry(self.material_entry, self.valid_materials)
+        if event.widget not in [self.diameter_entry, self.listbox_diameter]:
+            self.listbox_diameter.grid_remove()
+            self.check_entry(self.diameter_entry, self.valid_diameters)
+        if event.widget not in [self.data_projektu_entry, self.data_dokumentu_entry, self.data_uzgodnienia_entry]:
+            self.check_entry_dates(self.data_projektu_entry)
+            self.check_entry_dates(self.data_dokumentu_entry)
+            self.check_entry_dates(self.data_uzgodnienia_entry)
 
     def highlight_selection(self, event, listbox_widget):
         index = listbox_widget.nearest(event.y)
@@ -311,7 +298,6 @@ class Application(TkinterDnD.Tk):
             else:
                 self.update_diameter_entry_background()
 
-
     def update_entry_background(self, entry_widget, valid_items, filtered_items, isString):
         typed_text = entry_widget.get()
 
@@ -330,46 +316,25 @@ class Application(TkinterDnD.Tk):
                 else:
                     entry_widget.config(bg="lightcoral")
 
+    def check_entry(self, entry, dictionary):
+        typed_text = entry.get()
+        if typed_text != ''and typed_text not in dictionary and entry.cget('bg') != "lightgreen":
+            self.flash_entry(entry)
 
+    def check_entry_dates(self, entry):
+        if entry.get() != '':
+            try:
+                valid_date = datetime.strptime(entry.get(), '%d-%m-%Y')
+                if valid_date > datetime.now():
+                    self.flash_entry(entry)
 
-    def check_entry(self):
-        typed_text = self.material_entry.get()
-        if typed_text != ''and typed_text not in self.valid_materials and self.material_entry.cget('bg') != "lightgreen":
-            self.flash_entry()
+            except ValueError:
+                self.flash_entry(entry)
 
-
-    
-    def check_entry_dates(self):
-        dates = filename_generator.dates
-        for i, (label_text, tag_key) in enumerate(dates):
-            typed_date = self.static_entries[tag_key].get()
-            if typed_date != '':
-                try:
-                    valid_date = datetime.strptime(typed_date, '%d-%m-%Y')
-                    if valid_date > datetime.now():
-                        self.flash_entry_date(tag_key)
-
-                except ValueError:
-                    self.flash_entry_date(tag_key)
-
-
-
-
-    def flash_entry(self):
-        original_color = self.material_entry.cget('bg')
-        self.material_entry.config(bg="red")
-        self.after(500, lambda: self.material_entry.config(bg=original_color))
-
-    def flash_entry_date(self, tag):
-        self.static_entries[tag].config(bg="red")
-        self.after(500, lambda: self.static_entries[tag].config(bg='white'))
-
-    def validate_entry(self):
-        typed_text = self.material_entry.get()
-        if typed_text not in self.valid_materials:
-            messagebox.showerror("Błąd", "Wpisany materiał nie jest poprawny!")
-        else:
-            messagebox.showinfo("Sukces", "Tag dodany pomyślnie!")
+    def flash_entry(self, entry):
+        original_color = entry.cget('bg')
+        entry.config(bg="red")
+        self.after(500, lambda: entry.config(bg=original_color))
 
     def update_listbox_height(self, listbox_widget):
         num_items = listbox_widget.size()
@@ -379,32 +344,78 @@ class Application(TkinterDnD.Tk):
         tk.Label(self, text="Wybierz plik TIFF lub PDF:").grid(row=0, column=0, pady=10, sticky="w")
         tk.Button(self, text="Wybierz plik", command=self.choose_file).grid(row=0, column=1, pady=10,sticky="w")
 
-    def create_static_entries(self):
-        fields = filename_generator.fields
-        for i, (label_text, tag_key) in enumerate(fields):
-            self.create_labeled_entry(label_text, tag_key, row=(i % 3) + 2, column=(i // 3) * 2 + 2)
+    def create_file_drop_widget(self):
+        self.drop_label = tk.Label(self,
+                                   text="Przeciągnij plik tutaj",
+                                   bg="lightgray",  # kolor tła
+                                   fg="blue",  # kolor tekstu
+                                   highlightbackground="red",  # kolor ramki
+                                   highlightthickness=2,  # grubość ramki
+                                   padx=20, pady=20)  # odstępy wewnętrzn
+        self.drop_label.grid(row=0, column=3, padx=10, pady=5)
 
-    def create_labeled_entry(self, label_text, tag_key, row, column):
-        tk.Label(self, text=label_text).grid(row=row, column=column, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
-        entry = tk.Entry(self, width=self.ENTRY_WIDTH)
-        entry.grid(row=row, column=column + 1, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
-        self.static_entries[tag_key] = entry
+        self.drop_label.drop_target_register(DND_FILES)
+        self.drop_label.dnd_bind('<<Drop>>', self.on_drop)
 
-    def create_material_selection_widgets(self):
-        tk.Label(self, text="Materiał").grid(row=10, column=8, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
-        self.material_entry.grid(row=10, column=9, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
+        self.thumbnail_label.grid(row=0, column=5, padx=10, pady=5)
+        self.filename_label.grid(row=0, column=6, padx=10, pady=5)
+
+    def create_rodzaj_sieci(self):
+        tk.Label(self, text="Rodzaj sieci:").grid(row=2, column=6, pady=10, sticky="w")
+        tk.Label(self, text="Rodzaj teczki dokumentów:").grid(row=1, column=4, pady=20, sticky="w")
+        tk.Label(self, text="Typ dokumentacji:").grid(row=1, column=6, pady=20, sticky="w")
+        tk.Label(self, text="Podgrupa dokumentów:").grid(row=1, column=8, pady=20, sticky="w")
+
+    def create_entry(self, label, entry, row, col, bind = None, hide = False):
+        tk.Label(self, text=label).grid(row=row, column=col, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
+        entry.grid(row=row, column=col+1, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
+        if bind:
+            entry.bind('<KeyRelease>', bind)
+        if hide:
+            entry.grid_remove()
+
+    def createAdresLabels(self):
+        tk.Label(self, text="Adresy:").grid(row=7, column=0, pady=5, sticky="w")
+        tk.Label(self, text="Miasto:").grid(row=8, column=0, pady=20, sticky="w")
+        tk.Label(self, text="Ulica:").grid(row=8, column=1, pady=20, sticky="w")
+        tk.Label(self, text="Numer adresowy:").grid(row=8, column=2, pady=20, sticky="w")
+        tk.Label(self, text="Numer obrębu:").grid(row=8, column=3, pady=20, sticky="w")
+        tk.Label(self, text="Numer działki:").grid(row=8, column=4, pady=20, sticky="w")
+
+    def create_widgets(self, value):
+
+        self.create_file_selection_widgets()
+        self.create_file_drop_widget()
+
+        self.createAdresLabels()
+        self.create_rodzaj_sieci()
+
+        self.create_entry("Materiał", self.material_entry, 10, 8)
+        self.create_entry("Średnica", self.diameter_entry, 12, 8)
+
         self.listbox_material.grid(row=11, column=9, padx=self.COL_PAD, pady=self.ROW_PAD)
         self.listbox_material.grid_remove()
-
-    def create_diameter_selection_widgets(self):
-        tk.Label(self, text="Średnica").grid(row=12, column=8, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
-        self.diameter_entry.grid(row=12, column=9, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
         self.listbox_diameter.grid(row=13, column=9, padx=self.COL_PAD, pady=self.ROW_PAD)
         self.listbox_diameter.grid_remove()
 
-    def create_lenght_selection_widgets(self):
-        tk.Label(self, text="Długość").grid(row=14, column=8, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
-        self.lenght_entry.grid(row=14, column=9, padx=self.COL_PAD, pady=self.ROW_PAD, sticky="w")
+        self.create_entry("Długość", self.lenght_entry, 14, 8)
+        self.create_entry("Numer pliku", self.file_number_entry, 1, 2)
+        self.create_entry("Numer teczki", self.dir_number_entry, 1, 0,)
+
+        self.file_number_entry.bind("<KeyRelease>", lambda event: format_number(3, self.file_number_entry))
+        self.dir_number_entry.bind("<KeyRelease>", lambda event: format_number(5, self.dir_number_entry))
+
+        self.create_entry("Data projektu", self.data_projektu_entry, 2, 0, bind=format_date_entry)
+        self.create_entry("Data uzgodnienia", self.data_uzgodnienia_entry, 3, 0,bind=format_date_entry)
+        self.create_entry("Data dokumentu", self.data_dokumentu_entry, 4, 0,bind=format_date_entry)
+        self.create_entry("Inwestor", self.invesor_entry, 3, 3)
+        tk.Button(self, text="Dodaj nowy", command=self.add_new_row).grid(row=8, column=6, padx=5, pady=5)
+        tk.Button(self, text="Dodaj tagi", command=self.apply_tags).grid(row=7, column=8, columnspan=4, pady=20)
+
+        if value == 'EW':
+            print ('ew')
+        elif value == 'PZO':
+            print ('ew')
 
     def bind_events(self):
         # Materiały
@@ -422,62 +433,6 @@ class Application(TkinterDnD.Tk):
         self.listbox_diameter.bind('<Double-Button-1>', self.confirm_diameter_selection)
 
         self.bind('<Button-1>', self.on_click_outside)
-
-    def create_rodzaj_sieci(self):
-        tk.Label(self, text="Rodzaj sieci:").grid(row=2, column=6, pady=10, sticky="w")
-        rodzaj_sieci_menu = tk.OptionMenu(self, self.rodzaj_sieci_var, "wodociągowa", "kanalizacyjna", "wodociągowo-kanalizacyjna")
-        rodzaj_sieci_menu.config(width=20)
-        rodzaj_sieci_menu.grid(row=2, column=7, pady=10, sticky="w")
-
-    def create_date_entry(self):
-        dates = filename_generator.dates
-        for i, (label_text, tag_key) in enumerate(dates):
-            self.create_labeled_entry(label_text, tag_key, row=i+2, column=0)
-            self.static_entries[tag_key].bind('<KeyRelease>', format_date_entry)
-
-
-    def create_file_number_entry(self):
-        tk.Label(self, text="Numer pliku").grid(row=1, column=2, padx=10, pady=5, sticky="w")
-        self.file_number_entry.grid(row=1, column=3, padx=10, pady=5, sticky="w")
-        self.file_number_entry.bind("<KeyRelease>", lambda event: format_number(3, self.file_number_entry))
-
-    def create_dir_number_entry(self):
-        tk.Label(self, text="Numer teczki").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-        self.dir_number_entry.grid(row=1, column= 1, padx=10, pady=5, sticky="w")
-        self.dir_number_entry.bind("<KeyRelease>", lambda event: format_number(5, self.dir_number_entry))
-
-    def create_documentation_widgets(self):
-        tk.Label(self, text="Rodzaj teczki dokumentów:").grid(row=1, column=4, pady=20, sticky="w")
-        self.folder_type_menu = tk.OptionMenu(self, self.folder_type_var, "EW", "EWP", "EWS", "EKS", "KSA", "PZO", "UL", "N",
-                                         command=self.update_doc_type)
-        self.folder_type_menu.grid(row=1, column=5, pady=50)
-
-        tk.Label(self, text="Typ dokumentacji:").grid(row=1, column=6, pady=20, sticky="w")
-        self.doc_type_menu = tk.OptionMenu(self, self.doc_type_var, "", command=self.update_subgroup)
-        self.doc_type_menu.grid(row=1, column=7, pady=50)
-
-        tk.Label(self, text="Podgrupa dokumentów:").grid(row=1, column=8, pady=20, sticky="w")
-        self.subgroup_menu = tk.OptionMenu(self, self.subgroup_var, "")
-        self.subgroup_menu.grid(row=1, column=9, pady=10)
-
-    def create_widgets(self):
-        self.create_file_selection_widgets()
-        self.create_static_entries()
-        tk.Label(self, text="Adresy:").grid(row=7, column=0, pady=5, sticky="w")
-        tk.Label(self, text="Miasto:").grid(row=8, column=0, pady=20, sticky="w")
-        tk.Label(self, text="Ulica:").grid(row=8, column=1, pady=20, sticky="w")
-        tk.Label(self, text="Numer adresowy:").grid(row=8, column=2, pady=20, sticky="w")
-        tk.Label(self, text="Numer obrębu:").grid(row=8, column=3, pady=20, sticky="w")
-        tk.Label(self, text="Numer działki:").grid(row=8, column=4, pady=20, sticky="w")
-        self.create_material_selection_widgets()
-        self.create_diameter_selection_widgets()
-        self.create_lenght_selection_widgets()
-        self.create_rodzaj_sieci()
-        self.create_file_number_entry()
-        self.create_dir_number_entry()
-        self.create_documentation_widgets()
-        self.create_date_entry()
-        tk.Button(self, text="Dodaj tagi", command=self.apply_tags).grid(row=7, column=8, columnspan=4, pady=20)
 
     def validate_address(self, row_entries):
         """Rozpocznij proces walidacji i zmień przycisk na 'Anuluj'."""
@@ -605,7 +560,7 @@ class Application(TkinterDnD.Tk):
 
             # Zbieranie danych z pól
             file_extension = os.path.splitext(self.file_path)[1].lower()
-            info = {key: entry.get() for key, entry in self.static_entries.items()}
+            info = {}
             info['Rodzaj sieci'] = self.rodzaj_sieci_var.get()
             info['Nr_teczki'] = self.dir_number_entry.get()
             info['Material'] = self.material_entry.get()
@@ -614,8 +569,6 @@ class Application(TkinterDnD.Tk):
 
             address_structure = create_address_structure(self.dynamic_widgets)
             formatted_result = format_address_structure(address_structure)
-
-            print(formatted_result)
 
             folderType = self.folder_type_var.get()
             groupType = self.doc_type_var.get()
@@ -652,9 +605,7 @@ class Application(TkinterDnD.Tk):
             else:
                 messagebox.showerror("Błąd formatu", "Niewłaściwy format pliku. Wybierz TIFF lub PDF.")
 
-            # Wyczyść wszystkie pola po zakończeniu operacji
-            for entry in self.static_entries.values():
-                entry.delete(0, 'end')  # Usuwa zawartość każdego Entry widgetu
+            #todo Wyczyść wszystkie pola po zakończeniu operacji
 
             self.rodzaj_sieci_var.set('')  # Wyczyść zmienną rodzaju sieci
             file_number_text = self.file_number_entry.get()
@@ -688,7 +639,6 @@ class Application(TkinterDnD.Tk):
         if self.file_path:
             self.display_thumbnail(self.file_path)
 
-
     def process_ocr(self):
         try:
             result = ocr.rozpoznaj_adresy(self.file_path)
@@ -702,7 +652,7 @@ class Application(TkinterDnD.Tk):
 
             self.doc_type_menu["menu"].delete(0, "end")  # Czyszczenie starego menu
             self.subgroup_menu["menu"].delete(0, "end")  # Czyszczenie menu Podgrupa dokumentów
-
+            self.create_widgets(value)
             doc_type_options = filename_generator.get_group(value)
 
             for option in doc_type_options:
@@ -717,17 +667,11 @@ class Application(TkinterDnD.Tk):
         for option in subgroup_options:
             self.subgroup_menu["menu"].add_command(label=option, command=tk._setit(self.subgroup_var, option))
 
-    # def material_listbox(self, event):
-    #     self.show_material_listbox(self.material_entry, self.listbox_material, self.valid_materials, self.filter_items)
-
     def confirm_material_selection(self, event=None):
         self.confirm_selection(self.material_entry, self.listbox_material, 'material')
 
     def update_material_entry_background(self):
         self.update_entry_background(self.material_entry, self.valid_materials, self.filtered_materials, True)
-
-    # def diameter_listbox(self, event):
-    #     self.show_diameter_listbox(self.diameter_entry, self.listbox_diameter, self.valid_diameters, self.filter_items)
 
     def confirm_diameter_selection(self, event=None):
         self.confirm_selection(self.diameter_entry, self.listbox_diameter, 'diameter')
@@ -810,7 +754,6 @@ def create_address_structure(rows):
 
     return address_tree
 
-
 def format_address_structure(address_structure):
     formatted_output = []
 
@@ -841,7 +784,8 @@ def format_address_structure(address_structure):
 
     return ';'.join(formatted_output)
 
-
+def validate_entry():
+    messagebox.showinfo("Sukces", "Tag dodany pomyślnie!")
 
 app = Application()
 app.mainloop()

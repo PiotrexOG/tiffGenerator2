@@ -7,16 +7,6 @@ secondA = ["Projekty tekstowe", "Projekty graficzne"]
 secondB = ["Zgłoszenie rozpoczęcia robót", "Notatki z robót zanikowych", "Szkice do robót zanikowych", "Wyniki badania wody", "Wyniki prób ciśnieniowych", "Niesklasyfikowane"]
 secondC = ["Protokoły odbioru końcowego sieci wodociągowej","Protokoły odbioru sieci kanalizacji sanitarnej", "Protokoły odbioru końcowego przyłączy","Mapy pomiaru powykonawczego sieci", "Mapy pomiaru powykonawczego przyłaczy","Niesklasyfikowane"]
 secondD = ["Dokumenty niesklasyfikowane"]
-fields =[
-    ("Inwestor", "Inwestor"),
-    ("Numer uzgodnienia", "Numer_uzgodnienia"),
-    ("Numer inwentarzowy", "Numer_inwentarzowy"),
-    ("Opis", "Opis")
-]
-
-dates = [        ("Data uzgodnienia", "Data_uzgodnienia"),
-        ("Data projektu", "Data_projektu"),
-        ("Data dokumentu", "Data_dokumentu")]
 
 def generate_file_name_tags(folderType, groupType, subGroupType):
     f = chr(first.index(folderType) + 65)
