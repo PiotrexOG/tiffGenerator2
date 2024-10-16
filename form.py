@@ -46,11 +46,14 @@ class Application(TkinterDnD.Tk):
         self.info = {}
         self.skip_empty = 1
 
+        self.required_entries = []
+
         self.data = []
         self.valid_materials = material_dictionary.get_dict()
         self.valid_diameters = diameter_dictionary.get_dict()
 
-        self.rodzaj_sieci_var = tk.StringVar()
+        self.rodzaj_przewodu_var = tk.StringVar()
+        self.typ_przewodu_var = tk.StringVar()
         self.file_number_entry = tk.Entry(self, width=30)
         self.dir_number_entry = tk.Entry(self, width=30)
 
@@ -63,13 +66,14 @@ class Application(TkinterDnD.Tk):
         self.folder_type_menu.grid(row=1, column=5, pady=50)
         self.doc_type_menu.grid(row=1, column=7, pady=50)
         self.subgroup_menu.grid(row=1, column=9, pady=10)
-        tk.OptionMenu(self, self.rodzaj_sieci_var, "wodociągowa", "kanalizacyjna", "wodociągowo-kanalizacyjna").grid(row=2, column=7, pady=10, sticky="w")
+        tk.OptionMenu(self, self.rodzaj_przewodu_var, "wodociągowa", "kanalizacyjna", "wodociągowo-kanalizacyjna").grid(row=2, column=7, pady=10, sticky="w")
+        tk.OptionMenu(self, self.typ_przewodu_var, "sieć", "przyłącze", "sieć i przyłącze").grid(row=3, column=7, pady=10, sticky="w")
 
         self.entries = []  # Lista na widgety do wpisywania danych
         self.dynamic_widgets = []
         self.filtered_materials = []  # List to store filtered results
         self.filtered_diameters = []  # List to store filtered results
-        self.create_widgets(None)
+        self.create_widgets()
         self.bind_events()
         self.selected_index = None  # Reset selection
 
@@ -118,7 +122,6 @@ class Application(TkinterDnD.Tk):
         self.thumbnail_label.image = photo  # Zapisanie referencji, aby nie usunąć obrazu z pamięci
 
     def update_address_fields(self, result):
-        self.data = result
 
         # Czyszczenie poprzednich widgetów
         for widget_dict in self.dynamic_widgets:
@@ -132,6 +135,7 @@ class Application(TkinterDnD.Tk):
         fields_dynamic = ["Ulica", "Numer_adresowy", "Obręb", "Numer_działki"]
 
         if result:
+            self.data = result
             for i, item in enumerate(self.data):
                 self.add_row(i, item, fields_dynamic)
 
@@ -361,7 +365,8 @@ class Application(TkinterDnD.Tk):
         self.filename_label.grid(row=0, column=6, padx=10, pady=5)
 
     def create_rodzaj_sieci(self):
-        tk.Label(self, text="Rodzaj sieci:").grid(row=2, column=6, pady=10, sticky="w")
+        tk.Label(self, text="Rodzaj przewodu:").grid(row=2, column=6, pady=10, sticky="w")
+        tk.Label(self, text="Typ przewodu:").grid(row=3, column=6, pady=10, sticky="w")
         tk.Label(self, text="Rodzaj teczki dokumentów:").grid(row=1, column=4, pady=20, sticky="w")
         tk.Label(self, text="Typ dokumentacji:").grid(row=1, column=6, pady=20, sticky="w")
         tk.Label(self, text="Podgrupa dokumentów:").grid(row=1, column=8, pady=20, sticky="w")
@@ -382,7 +387,7 @@ class Application(TkinterDnD.Tk):
         tk.Label(self, text="Numer obrębu:").grid(row=8, column=3, pady=20, sticky="w")
         tk.Label(self, text="Numer działki:").grid(row=8, column=4, pady=20, sticky="w")
 
-    def create_widgets(self, value):
+    def create_widgets(self):
 
         self.create_file_selection_widgets()
         self.create_file_drop_widget()
@@ -406,16 +411,33 @@ class Application(TkinterDnD.Tk):
         self.dir_number_entry.bind("<KeyRelease>", lambda event: format_number(5, self.dir_number_entry))
 
         self.create_entry("Data projektu", self.data_projektu_entry, 2, 0, bind=format_date_entry)
+        self.create_entry("Numer uzgodnienia", self.numer_uzgodnienia_entry, 2, 3)
         self.create_entry("Data uzgodnienia", self.data_uzgodnienia_entry, 3, 0,bind=format_date_entry)
         self.create_entry("Data dokumentu", self.data_dokumentu_entry, 4, 0,bind=format_date_entry)
         self.create_entry("Inwestor", self.invesor_entry, 3, 3)
         tk.Button(self, text="Dodaj nowy", command=self.add_new_row).grid(row=8, column=6, padx=5, pady=5)
         tk.Button(self, text="Dodaj tagi", command=self.apply_tags).grid(row=7, column=8, columnspan=4, pady=20)
 
+
+    def update_entries_group(self, value):
+        if len(self.required_entries) > 0:
+            for entry in self.required_entries:
+                entry.config(highlightbackground="SystemButtonFace", highlightthickness=1)
+        self.required_entries.clear()
+
         if value == 'EW':
-            print ('ew')
+            self.required_entries.append(self.data_projektu_entry)
+            self.required_entries.append(self.data_uzgodnienia_entry)
+            self.required_entries.append(self.numer_uzgodnienia_entry)
+            self.required_entries.append(self.invesor_entry)
         elif value == 'PZO':
-            print ('ew')
+            self.required_entries.append(self.invesor_entry)
+        self.required_entries.append(self.file_number_entry)
+        self.required_entries.append(self.dir_number_entry)
+
+        for entry in self.required_entries:
+            entry.config(highlightbackground="blue", highlightthickness=1)
+
 
     def bind_events(self):
         # Materiały
@@ -577,19 +599,21 @@ class Application(TkinterDnD.Tk):
 
             # Sprawdzanie wymaganych pól
             required_fields = {
-                'Nr_teczki': self.dir_number_entry.get(),
-                'Numer_pliku': self.file_number_entry.get(),
-                'folder_type': folderType,
-                'group_type': groupType,
-                'subGroupType': subGroupType
+                self.dir_number_entry: self.dir_number_entry.get(),
+                self.file_number_entry: self.file_number_entry.get(),
+                self.folder_type_menu: folderType,
+                self.doc_type_menu: groupType,
+                self.subgroup_menu: subGroupType
             }
 
             # Sprawdzenie, czy któreś z wymaganych pól nie jest puste
-            for tag, value in required_fields.items():
+            isMissing = False
+            for entry, value in required_fields.items():
                 if value == '':
-                    self.flash_entry_check(tag)  # Zmieniamy kolor pola na czerwony
-                    #messagebox.showerror("Brakujące dane", f"Pole '{tag}' jest wymagane.")
-                    return  # Przerywamy operację tagowania, jeśli którekolwiek pole jest puste
+                    isMissing = True
+                    self.flash_entry(entry)  # Zmieniamy kolor pola na czerwony
+            if isMissing:
+                return
 
             # Generowanie nowej nazwy pliku
             f, s, t = filename_generator.generate_file_name_tags(folderType, groupType, subGroupType)
@@ -607,7 +631,7 @@ class Application(TkinterDnD.Tk):
 
             #todo Wyczyść wszystkie pola po zakończeniu operacji
 
-            self.rodzaj_sieci_var.set('')  # Wyczyść zmienną rodzaju sieci
+            #self.rodzaj_sieci_var.set('')  # Wyczyść zmienną rodzaju sieci
             file_number_text = self.file_number_entry.get()
             new_file_number = int(file_number_text) + 1
 
@@ -616,23 +640,6 @@ class Application(TkinterDnD.Tk):
 
         # except Exception as e:
         #         messagebox.showerror("Błąd tagowania", f"Wystąpił problem: {e}")
-    def flash_entry_check(self, tag):
-        if tag == 'Nr_teczki':
-            entry = self.dir_number_entry
-        elif tag == 'Numer_pliku':
-            entry = self.file_number_entry
-        elif tag == 'folder_type':
-            entry = self.folder_type_menu  # Zakładam, że widget dla folder_type to np. Entry lub inny widget
-        elif tag == 'group_type':
-            entry = self.doc_type_menu
-        elif tag == 'subGroupType':
-            entry = self.subgroup_menu
-        else:
-            return
-
-        # Zmiana koloru tła na czerwony, a potem na biały po 500 ms
-        entry.config(bg="red")
-        self.after(500, lambda: entry.config(bg='white'))
 
     def choose_file(self):
         self.file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf"),("TIFF files", "*.tiff")])
@@ -652,7 +659,7 @@ class Application(TkinterDnD.Tk):
 
             self.doc_type_menu["menu"].delete(0, "end")  # Czyszczenie starego menu
             self.subgroup_menu["menu"].delete(0, "end")  # Czyszczenie menu Podgrupa dokumentów
-            self.create_widgets(value)
+            self.show_widgets(value)
             doc_type_options = filename_generator.get_group(value)
 
             for option in doc_type_options:
