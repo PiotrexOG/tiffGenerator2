@@ -4,7 +4,7 @@ first = ["EW", "EWP", "EWS", "EKS", "KSA", "PZO", "UL", "N"]
 second = ["Dokumentacja projektowa", "Dokumentacja odbiorowa", "Dokumentacja powykonawcza","Dokumenty niesklasyfikowane"]
 
 secondA = ["Projekty tekstowe", "Projekty graficzne"]
-secondB = ["Zgłoszenie rozpoczęcia robót", "Notatki z robót zanikowych", "Szkice do robót zanikowych", "Wyniki badania wody", "Wyniki prób ciśnieniowych", "Niesklasyfikowane"]
+secondB = ["Zgłoszenie rozpoczęcia robót", "Notatki z robót zanikowych", "Szkice do robót zanikowych", "Wyniki badania wody", "Wyniki prób ciśnieniowych", "Dokument tekstowy", "Multimedia", "Mapa z zakresem monitoringu"]
 secondC = ["Protokoły odbioru końcowego sieci wodociągowej","Protokoły odbioru sieci kanalizacji sanitarnej", "Protokoły odbioru końcowego przyłączy","Mapy pomiaru powykonawczego sieci", "Mapy pomiaru powykonawczego przyłaczy","Niesklasyfikowane"]
 secondD = ["Dokumenty niesklasyfikowane"]
 
