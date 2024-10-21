@@ -456,32 +456,44 @@ class Application(TkinterDnD.Tk):
 
     def update_entries_group(self, value):
 
-        self.folder_required_entries.clear()
+        #self.folder_required_entries.clear()
+
+        for key, labeledEntry in list(self.labeled_entries.items()):
+            if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
+                    labeledEntry.destroy()
+                    self.labeled_entries.pop(key)
+
 
         if value == 'EW' or value == 'UL':
             self.create_folder_entries()
-            self.folder_required_entries.append(self.labeled_entries["Numer uzgodnienia"])
-            self.folder_required_entries.append(self.labeled_entries["Data projektu"])
-            self.folder_required_entries.append(self.labeled_entries["Data uzgodnienia"])
-            self.folder_required_entries.append(self.labeled_entries["Inwestor"])
+            # self.folder_required_entries.append(self.labeled_entries["Numer uzgodnienia"])
+            # self.folder_required_entries.append(self.labeled_entries["Data projektu"])
+            # self.folder_required_entries.append(self.labeled_entries["Data uzgodnienia"])
+            # self.folder_required_entries.append(self.labeled_entries["Inwestor"])
 
         self.labeled_entries["Numer teczki"] = LabeledEntry(self, "Numer teczki", 1, 2,
                                                             bind=lambda event: format_number(5, self.labeled_entries[
                                                                 "Numer teczki"].entry))
-        self.folder_required_entries.append(self.labeled_entries["Numer teczki"])
+        # self.folder_required_entries.append(self.labeled_entries["Numer teczki"])
 
-        keys = []
-        for key, labeledEntry in self.labeled_entries.items():
-                if labeledEntry not in self.folder_required_entries:
-                    if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
-                        labeledEntry.destroy()
-                        keys.append(key)
+        # for key, labeledEntry in list(self.labeled_entries.items()):
+        #     if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
+        #         if labeledEntry not in self.folder_required_entries:
+        #             labeledEntry.destroy()
+        #             self.labeled_entries.pop(key)
 
-        for key in keys:
-            self.labeled_entries.pop(key)
-
-        for labeledEntry in self.folder_required_entries:
-            labeledEntry.config_entry(highlightbackground="blue", highlightthickness=1)
+        # keys = []
+        # for key, labeledEntry in self.labeled_entries.items():
+        #         if labeledEntry not in self.folder_required_entries:
+        #             if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
+        #                 labeledEntry.destroy()
+        #                 keys.append(key)
+        #
+        # for key in keys:
+        #     self.labeled_entries.pop(key)
+        #
+        # for labeledEntry in self.folder_required_entries:
+        #     labeledEntry.config_entry(highlightbackground="blue", highlightthickness=1)
 
     def create_file_entries(self):
         self.labeled_entries["Materiał"] = LabeledEntry(self, "Materiał", 10, 8)
@@ -492,14 +504,19 @@ class Application(TkinterDnD.Tk):
         self.labeled_entries["Data dokumentu"] = LabeledEntry(self, "Data dokumentu", 2, 10,bind=format_date_entry)
 
     def update_entries_file(self, value):
-        self.required_entries.clear()
+       # self.required_entries.clear()
+
+        for key, labeledEntry in list(self.labeled_entries.items()):
+            if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
+                labeledEntry.destroy()
+                self.labeled_entries.pop(key)
 
         self.create_file_entries()
-        self.required_entries.append(self.labeled_entries["Materiał"])
-        self.required_entries.append(self.labeled_entries["Średnica"])
-        self.required_entries.append(self.labeled_entries["Rodzaj przewodu"])
-        self.required_entries.append(self.labeled_entries["Typ przewodu"])
-        self.required_entries.append(self.labeled_entries["Data dokumentu"])
+        # self.required_entries.append(self.labeled_entries["Materiał"])
+        # self.required_entries.append(self.labeled_entries["Średnica"])
+        # self.required_entries.append(self.labeled_entries["Rodzaj przewodu"])
+        # self.required_entries.append(self.labeled_entries["Typ przewodu"])
+        # self.required_entries.append(self.labeled_entries["Data dokumentu"])
 
 
 
@@ -509,68 +526,75 @@ class Application(TkinterDnD.Tk):
             pass
 
         elif value == 'Zgłoszenie rozpoczęcia robót':
-            self.required_entries.remove(self.labeled_entries["Materiał"])
-            self.required_entries.remove(self.labeled_entries["Średnica"])
-        elif value == 'Notatki z robót zanikowych':
-            self.required_entries.remove(self.labeled_entries["Materiał"])
-            self.required_entries.remove(self.labeled_entries["Średnica"])
-        elif value == 'Szkice do robót zanikowych':
-            self.required_entries.remove(self.labeled_entries["Materiał"])
-            self.required_entries.remove(self.labeled_entries["Średnica"])
-            self.required_entries.remove(self.labeled_entries["Data dokumentu"])
-        elif value == 'Wyniki badania wody':
-            self.required_entries.remove(self.labeled_entries["Materiał"])
-            self.required_entries.remove(self.labeled_entries["Średnica"])
-            self.rodzaj_przewodu_var.set('wodociągowa')
-            self.labeled_entries["Rodzaj przewodu"].config_entry(state="disabled")
-        elif value == 'Wyniki prób ciśnieniowych':
-            self.rodzaj_przewodu_var.set('wodociągowa')
-            self.labeled_entries["Rodzaj przewodu"].config_entry(state="disabled")
-        elif value == 'Dokument tekstowy':
-            pass
-        elif value == 'Multimedia':
-            pass
-        elif value == 'Mapa z zakresem monitoringu':
-            self.required_entries.remove(self.labeled_entries["Data dokumentu"])
+            self.labeled_entries["Materiał"].destroy()
+            self.labeled_entries.pop("Materiał")
+            #self.required_entries.remove(self.labeled_entries["Średnica"])
+        # elif value == 'Notatki z robót zanikowych':
+        #     self.required_entries.remove(self.labeled_entries["Materiał"])
+        #     self.required_entries.remove(self.labeled_entries["Średnica"])
+        # elif value == 'Szkice do robót zanikowych':
+        #     self.required_entries.remove(self.labeled_entries["Materiał"])
+        #     self.required_entries.remove(self.labeled_entries["Średnica"])
+        #     self.required_entries.remove(self.labeled_entries["Data dokumentu"])
+        # elif value == 'Wyniki badania wody':
+        #     self.required_entries.remove(self.labeled_entries["Materiał"])
+        #     self.required_entries.remove(self.labeled_entries["Średnica"])
+        #     self.rodzaj_przewodu_var.set('wodociągowa')
+        #     self.labeled_entries["Rodzaj przewodu"].config_entry(state="disabled")
+        # elif value == 'Wyniki prób ciśnieniowych':
+        #     self.rodzaj_przewodu_var.set('wodociągowa')
+        #     self.labeled_entries["Rodzaj przewodu"].config_entry(state="disabled")
+        # elif value == 'Dokument tekstowy':
+        #     pass
+        # elif value == 'Multimedia':
+        #     pass
+        # elif value == 'Mapa z zakresem monitoringu':
+        #     self.required_entries.remove(self.labeled_entries["Data dokumentu"])
+        #
+        # elif value == 'Protokoły odbioru końcowego':
+        #     pass
+        # elif value == 'Protokoły odbioru końcowego przyłączy':
+        #     self.typ_przewodu_var.set('przyłącze')
+        #     self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
+        # elif value == 'Mapy pomiaru powykonawczego sieci':
+        #     self.typ_przewodu_var.set('sieć')
+        #     self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
+        # elif value == 'Mapy pomiaru powykonawczego przyłaczy':
+        #     self.typ_przewodu_var.set('przyłącze')
+        #     self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
+        # elif value == 'Zlecenie montażu wodomierza':
+        #     self.required_entries.remove(self.labeled_entries["Materiał"])
+        #     self.required_entries.remove(self.labeled_entries["Średnica"])
+        #     self.typ_przewodu_var.set('przyłącze')
+        #     self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
+        #     self.rodzaj_przewodu_var.set('wodociągowa')
+        #     self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
+        #
+        # elif value == 'Niesklasyfikowane':
+        #     self.required_entries.remove(self.labeled_entries["Materiał"])
+        #     self.required_entries.remove(self.labeled_entries["Średnica"])
+        #     self.required_entries.remove(self.labeled_entries["Rodzaj przewodu"])
+        #     self.required_entries.remove(self.labeled_entries["Typ przewodu"])
+        #     self.required_entries.remove(self.labeled_entries["Data dokumentu"])
 
-        elif value == 'Protokoły odbioru końcowego':
-            pass
-        elif value == 'Protokoły odbioru końcowego przyłączy':
-            self.typ_przewodu_var.set('przyłącze')
-            self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
-        elif value == 'Mapy pomiaru powykonawczego sieci':
-            self.typ_przewodu_var.set('sieć')
-            self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
-        elif value == 'Mapy pomiaru powykonawczego przyłaczy':
-            self.typ_przewodu_var.set('przyłącze')
-            self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
-        elif value == 'Zlecenie montażu wodomierza':
-            self.required_entries.remove(self.labeled_entries["Materiał"])
-            self.required_entries.remove(self.labeled_entries["Średnica"])
-            self.typ_przewodu_var.set('przyłącze')
-            self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
-            self.rodzaj_przewodu_var.set('wodociągowa')
-            self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
+        # keys = []
+        # for key, labeledEntry in self.labeled_entries.items():
+        #         if labeledEntry not in self.required_entries:
+        #             if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
+        #                 labeledEntry.destroy()
+        #                 keys.append(key)
+        #
+        # for key in keys:
+        #     self.labeled_entries.pop(key)
 
-        elif value == 'Niesklasyfikowane':
-            self.required_entries.remove(self.labeled_entries["Materiał"])
-            self.required_entries.remove(self.labeled_entries["Średnica"])
-            self.required_entries.remove(self.labeled_entries["Rodzaj przewodu"])
-            self.required_entries.remove(self.labeled_entries["Typ przewodu"])
-            self.required_entries.remove(self.labeled_entries["Data dokumentu"])
+        # for key, labeledEntry in list(self.labeled_entries.items()):
+        #     if labeledEntry not in self.required_entries:
+        #         if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
+        #             labeledEntry.destroy()
+        #             self.labeled_entries.pop(key)
 
-        keys = []
-        for key, labeledEntry in self.labeled_entries.items():
-                if labeledEntry not in self.required_entries:
-                    if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
-                        labeledEntry.destroy()
-                        keys.append(key)
-
-        for key in keys:
-            self.labeled_entries.pop(key)
-
-        for entry in self.required_entries:
-            entry.config_entry(highlightbackground="blue", highlightthickness=1)
+        # for entry in self.required_entries:
+        #     entry.config_entry(highlightbackground="blue", highlightthickness=1)
 
     def bind_events(self):
         # Materiały
