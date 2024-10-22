@@ -29,16 +29,8 @@ class Application(TkinterDnD.Tk):
 
     def __init__(self):
         super().__init__()
-        self.listbox_material = tk.Listbox(self, height=10, width=50)
-        self.listbox_diameter = tk.Listbox(self, height=10, width=50)
-        # self.material_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
-        # self.lenght_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
-        # self.diameter_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
-        # self.invesor_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
-        # self.numer_uzgodnienia_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
-        # self.data_uzgodnienia_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
-        # self.data_projektu_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
-        # self.data_dokumentu_entry = tk.Entry(self, width=self.ENTRY_WIDTH)
+        self.listbox_material = tk.Listbox(self, height=10, width=25)
+        self.listbox_diameter = tk.Listbox(self, height=10, width=25)
 
         self.thumbnail_label = tk.Label(self)
         self.filename_label = tk.Label(self)
@@ -51,8 +43,19 @@ class Application(TkinterDnD.Tk):
 
         self.labeled_entries = {}
 
+        self.diameter_and_material_entries = []
+
+        # Przycisk dodawania nowego wiersza
+        self.add_button = tk.Button(self, text="Dodaj nowy", command=self.add_new_rowDM)
+        self.add_button.grid(row=8, column=9, pady=10, padx=10)
+
+        # Pierwszy wiersz z materiałem i średnicą
+        self.add_new_rowDM()
+
         self.required_entries = []
         self.folder_required_entries = []
+        self.folder_possible_entries = []
+
 
         self.data = []
         self.valid_materials = material_dictionary.get_dict()
@@ -67,9 +70,9 @@ class Application(TkinterDnD.Tk):
         self.doc_type_var = tk.StringVar()
         self.subgroup_var = tk.StringVar()
 
-        self.labeled_entries["Rodzaj teczki dokumentów"] = LabeledOptionMenu(self, "Rodzaj teczki dokumentów:", self.folder_type_var, values=["EW", "EWP", "EWS", "EKS", "KSA", "NI", "UL","N"], row=1, col=0, bind=self.update_doc_type, hide=False)
-        self.labeled_entries["Typ dokumentacji"] = LabeledOptionMenu(self, "Typ dokumentacji:", self.doc_type_var, values=[""], row=2, col=0, hide=False)
-        self.labeled_entries["Podgrupa dokumentów"] = LabeledOptionMenu(self, "Podgrupa dokumentów:", self.subgroup_var, values=[""], row=2, col=2, hide=False)
+        self.labeled_entries["Rodzaj teczki dokumentów"] = LabeledOptionMenu(self, "Rodzaj\n teczki dokumentów:", self.folder_type_var, values=["EW", "EWP", "EWS", "EKS", "KSA", "NI", "UL","N"], row=1, col=0, bind=self.update_doc_type, hide=False)
+        self.labeled_entries["Typ dokumentacji"] = LabeledOptionMenu(self, "Typ\n dokumentacji:", self.doc_type_var, values=[""], row=2, col=0, hide=False)
+        self.labeled_entries["Podgrupa dokumentów"] = LabeledOptionMenu(self, "Podgrupa\n dokumentów:", self.subgroup_var, values=[""], row=2, col=2, hide=False)
         # self.labeled_entries["Rodzaj przewodu"] = LabeledOptionMenu(self, "Rodzaj przewodu:", self.rodzaj_przewodu_var, values=["wodociągowa", "kanalizacyjna",
         #                                                        "wodociągowo-kanalizacyjna"], row=2, col=8)
         # self.labeled_entries["Typ przewodu"] = LabeledOptionMenu(self, "Typ przewodu:", self.typ_przewodu_var, values=["sieć", "przyłącze", "sieć i przyłącze"], row=2, col=6)
@@ -160,7 +163,7 @@ class Application(TkinterDnD.Tk):
     def add_row(self, row_index, item, fields_dynamic):
         row_entries = {}
 
-        entry = tk.Entry(self, width=20)
+        entry = tk.Entry(self, width=10)
         entry.grid(row=9 + row_index, column=0, padx=10, pady=5, sticky="w")
         entry.insert(0, "Gdańsk")
         row_entries["Miejscowość"] = entry
@@ -168,7 +171,10 @@ class Application(TkinterDnD.Tk):
 
         col = 1
         for field in fields_dynamic:
-            entry = tk.Entry(self, width=20)
+            if field == "Ulica":
+                entry = tk.Entry(self, width=20)
+            else:
+                entry = tk.Entry(self, width=10)
             entry.grid(row=9 + row_index, column=col, padx=10, pady=5, sticky="w")
             entry.insert(0, item[field.split()[0]])
             row_entries[field] = entry
@@ -380,8 +386,8 @@ class Application(TkinterDnD.Tk):
         listbox_widget.config(height=min(num_items, 5))
 
     def create_file_selection_widgets(self):
-        tk.Label(self, text="Wybierz plik TIFF lub PDF:").grid(row=0, column=0, pady=10, sticky="w")
-        tk.Button(self, text="Wybierz plik", command=self.choose_file).grid(row=0, column=1, pady=10,sticky="w")
+        tk.Label(self, text="Wybierz plik\nTIFF lub PDF:").grid(row=0, column=0, pady=5, sticky="w")
+        tk.Button(self, text="Wybierz plik", command=self.choose_file).grid(row=0, column=1, pady=5,sticky="w")
 
     def create_file_drop_widget(self):
         self.drop_label = tk.Label(self,
@@ -417,9 +423,11 @@ class Application(TkinterDnD.Tk):
         tk.Label(self, text="Adresy:").grid(row=7, column=0, pady=5, sticky="w")
         tk.Label(self, text="Miasto:").grid(row=8, column=0, pady=20, sticky="w")
         tk.Label(self, text="Ulica:").grid(row=8, column=1, pady=20, sticky="w")
-        tk.Label(self, text="Numer adresowy:").grid(row=8, column=2, pady=20, sticky="w")
-        tk.Label(self, text="Numer obrębu:").grid(row=8, column=3, pady=20, sticky="w")
-        tk.Label(self, text="Numer działki:").grid(row=8, column=4, pady=20, sticky="w")
+        tk.Label(self, text="Numer\n adresowy:").grid(row=8, column=2, pady=20, sticky="w")
+        tk.Label(self, text="Numer\n obrębu:").grid(row=8, column=3, pady=20, sticky="w")
+        tk.Label(self, text="Numer\n działki:").grid(row=8, column=4, pady=20, sticky="w")
+        tk.Label(self, text="Średnica:").grid(row=8, column=8, pady=20, sticky="w")
+        tk.Label(self, text="Materiał:").grid(row=8, column=10, pady=20, sticky="w")
 
     def create_widgets(self):
 
@@ -427,47 +435,39 @@ class Application(TkinterDnD.Tk):
         self.create_file_drop_widget()
 
         self.createAdresLabels()
-        #self.create_rodzaj_sieci()
-
-        # self.labeled_entries["Materiał"] = LabeledEntry(self, "Materiał", 10, 8)
-        # self.labeled_entries["Średnica"] = LabeledEntry(self, "Średnica", 12, 8)
-
 
         self.listbox_material.grid(row=11, column=9, padx=self.COL_PAD, pady=self.ROW_PAD)
         self.listbox_material.grid_remove()
-        self.listbox_diameter.grid(row=13, column=9, padx=self.COL_PAD, pady=self.ROW_PAD)
+        self.listbox_diameter.grid(row=11, column=11, padx=self.COL_PAD, pady=self.ROW_PAD)
         self.listbox_diameter.grid_remove()
-
-       #self.labeled_entries["Długość"] = LabeledEntry(self, "Długość", 14, 8)
-
-
-
-
-        #self.labeled_entries["Numer pliku"] = LabeledEntry(self, "Numer pliku", 2, 4, bind=lambda event: format_number(3, self.labeled_entries["Numer pliku"].entry))
-        #self.labeled_entries["Data dokumentu"] = LabeledEntry(self, "Data dokumentu", 2, 10,bind=format_date_entry)
 
         tk.Button(self, text="Dodaj nowy", command=self.add_new_row).grid(row=8, column=6, padx=5, pady=5)
         tk.Button(self, text="Dodaj tagi", command=self.apply_tags).grid(row=7, column=8, columnspan=4, pady=20)
 
     def create_folder_entries(self):
         if "Numer uzgodnienia" not in self.labeled_entries:
-            self.labeled_entries["Numer uzgodnienia"] = LabeledEntry(self, "Numer uzgodnienia", 1, 4)
+            self.labeled_entries["Numer uzgodnienia"] = LabeledEntry(self, "Numer uzgodnienia", 1, 4,entry_width=15)
+        self.labeled_entries["Numer uzgodnienia"].config_entry(highlightbackground="black", highlightthickness=0)
 
         if "Data uzgodnienia" not in self.labeled_entries or not self.labeled_entries["Data uzgodnienia"]:
             self.labeled_entries["Data uzgodnienia"] = LabeledEntry(self, "Data uzgodnienia", 1, 6,
                                                                     bind=format_date_entry)
+        self.labeled_entries["Data uzgodnienia"].config_entry(highlightbackground="black", highlightthickness=0)
 
         if "Data projektu" not in self.labeled_entries or not self.labeled_entries["Data projektu"]:
             self.labeled_entries["Data projektu"] = LabeledEntry(self, "Data projektu", 1, 8, bind=format_date_entry)
+        self.labeled_entries["Data projektu"].config_entry(highlightbackground="black", highlightthickness=0)
 
         if "Inwestor" not in self.labeled_entries or not self.labeled_entries["Inwestor"]:
-            self.labeled_entries["Inwestor"] = LabeledEntry(self, "Inwestor", 1, 10)
+            self.labeled_entries["Inwestor"] = LabeledEntry(self, "Inwestor", 1, 10,entry_width=15)
+        self.labeled_entries["Inwestor"].config_entry(highlightbackground="black", highlightthickness=0)
 
        # self.bind_events()
 
     def update_entries_group(self, value):
 
         self.folder_required_entries.clear()
+        self.folder_possible_entries.clear()
 
         if value == 'EW' or value == 'UL':
             self.create_folder_entries()
@@ -475,134 +475,146 @@ class Application(TkinterDnD.Tk):
             self.folder_required_entries.append("Data projektu")
             self.folder_required_entries.append("Data uzgodnienia")
             self.folder_required_entries.append("Inwestor")
+        elif value == 'N':
+            self.create_folder_entries()
+            self.folder_possible_entries.append("Numer uzgodnienia")
+            self.folder_possible_entries.append("Data projektu")
+            self.folder_possible_entries.append("Data uzgodnienia")
+            self.folder_possible_entries.append("Inwestor")
+        elif value == 'KSA' or value == 'UL':
+            if "Inwestor" not in self.labeled_entries or not self.labeled_entries["Inwestor"]:
+                self.labeled_entries["Inwestor"] = LabeledEntry(self, "Inwestor", 1, 10,entry_width=15)
+            self.labeled_entries["Inwestor"].config_entry(highlightbackground="black", highlightthickness=0)
+            self.folder_required_entries.append("Inwestor")
 
         self.labeled_entries["Numer teczki"] = LabeledEntry(self, "Numer teczki", 1, 2,
                                                             bind=lambda event: format_number(5, self.labeled_entries[
                                                                 "Numer teczki"].entry))
+
         self.folder_required_entries.append("Numer teczki")
+        self.folder_required_entries.append("Rodzaj teczki dokumentów")
+        self.folder_required_entries.append("Typ dokumentacji")
+        self.folder_required_entries.append("Podgrupa dokumentów")
 
         for key, labeledEntry in list(self.labeled_entries.items()):
-            if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
                 if key not in self.folder_required_entries:
-                    labeledEntry.destroy()
-                    self.labeled_entries.pop(key)
+                    if key not in self.folder_possible_entries:
+                        labeledEntry.destroy()
+                        self.labeled_entries.pop(key)
+
+
 #
         for key in self.folder_required_entries:
             self.labeled_entries[key].config_entry(highlightbackground="blue", highlightthickness=1)
 
-    def create_file_entries(self):
-        if "Materiał" not in self.labeled_entries or not self.labeled_entries["Materiał"]:
-            self.labeled_entries["Materiał"] = LabeledEntry(self, "Materiał", 10, 8)
+    def create_file_entries(self, value):
+        if value == "Materiał":
+            if "Materiał" not in self.labeled_entries or not self.labeled_entries["Materiał"]:
+                self.labeled_entries["Materiał"] = LabeledEntry(self, "Materiał", 10, 8)
+                self.bind_materials()
+        if value == "Średnica":
+            if "Średnica" not in self.labeled_entries or not self.labeled_entries["Średnica"]:
+                self.labeled_entries["Średnica"] = LabeledEntry(self, "Średnica", 10, 10)
+                self.bind_diameters()
+        if value == "Rodzaj przewodu":
+            if "Rodzaj przewodu" not in self.labeled_entries or not self.labeled_entries["Rodzaj przewodu"]:
+                self.labeled_entries["Rodzaj przewodu"] = LabeledOptionMenu(
+                    self, "Rodzaj przewodu:", self.rodzaj_przewodu_var,
+                    values=["wodociągowa", "kanalizacyjna", "wodociągowo-kanalizacyjna"],
+                    row=2, col=8
+                )
+        if value == "Typ przewodu":
+            if "Typ przewodu" not in self.labeled_entries or not self.labeled_entries["Typ przewodu"]:
+                self.labeled_entries["Typ przewodu"] = LabeledOptionMenu(
+                    self, "Typ przewodu:", self.typ_przewodu_var,
+                    values=["sieć", "przyłącze", "sieć i przyłącze"],
+                    row=2, col=6
+                )
+        if value == "Data dokumentu":
+            if "Data dokumentu" not in self.labeled_entries or not self.labeled_entries["Data dokumentu"]:
+                self.labeled_entries["Data dokumentu"] = LabeledEntry(self, "Data dokumentu", 2, 10, bind=format_date_entry)
 
-        if "Średnica" not in self.labeled_entries or not self.labeled_entries["Średnica"]:
-            self.labeled_entries["Średnica"] = LabeledEntry(self, "Średnica", 12, 8)
+        if value == "Numer dokumentu":
+            if "Numer dokumentu" not in self.labeled_entries or not self.labeled_entries["Numer dokumentu"]:
+                self.labeled_entries["Numer dokumentu"] = LabeledEntry(self, "Numer dokumentu", 3, 10,entry_width=15)
 
-        if "Rodzaj przewodu" not in self.labeled_entries or not self.labeled_entries["Rodzaj przewodu"]:
-            self.labeled_entries["Rodzaj przewodu"] = LabeledOptionMenu(
-                self, "Rodzaj przewodu:", self.rodzaj_przewodu_var,
-                values=["wodociągowa", "kanalizacyjna", "wodociągowo-kanalizacyjna"],
-                row=2, col=8
-            )
+        if value == "Numer inwentarzowy":
+            if "Numer inwentarzowy" not in self.labeled_entries or not self.labeled_entries["Numer inwentarzowy"]:
+                self.labeled_entries["Numer inwentarzowy"] = LabeledEntry(self, "Numer inwentarzowy", 3, 6,entry_width=15)
 
-        if "Typ przewodu" not in self.labeled_entries or not self.labeled_entries["Typ przewodu"]:
-            self.labeled_entries["Typ przewodu"] = LabeledOptionMenu(
-                self, "Typ przewodu:", self.typ_przewodu_var,
-                values=["sieć", "przyłącze", "sieć i przyłącze"],
-                row=2, col=6
-            )
+        if value == "Numer księgi inwentarzowej":
+            if "Numer księgi inwentarzowej" not in self.labeled_entries or not self.labeled_entries["Numer księgi inwentarzowej"]:
+                self.labeled_entries["Numer księgi inwentarzowej"] = LabeledEntry(self, "Numer księgi inwentarzowej", 3, 8,entry_width=15)
 
-        if "Data dokumentu" not in self.labeled_entries or not self.labeled_entries["Data dokumentu"]:
-            self.labeled_entries["Data dokumentu"] = LabeledEntry(self, "Data dokumentu", 2, 10, bind=format_date_entry)
+        if value == "Numer teczki EW":
+            if "Numer teczki EW" not in self.labeled_entries or not self.labeled_entries["Numer teczki EW"]:
+                self.labeled_entries["Numer teczki EW"] = LabeledEntry(self, "Numer teczki EW", 3, 8)
 
         self.bind_events()
-        self.bind_diameters()
-        self.bind_materials()
 
-    def update_entries_file(self, value):
+    def update_entries_file1(self, value):
         self.required_entries.clear()
 
-        self.create_file_entries()
-        self.required_entries.append("Materiał")
-        self.required_entries.append("Średnica")
-        self.required_entries.append("Rodzaj przewodu")
-        self.required_entries.append("Typ przewodu")
-        self.required_entries.append("Data dokumentu")
-
-        if value == 'Projekty tekstowe':
-            pass
-        elif value == 'Projekty graficzne':
-            pass
-
-        elif value == 'Zgłoszenie rozpoczęcia robót':
-            self.required_entries.remove("Średnica")
-
-        elif value == 'Notatki z robót zanikowych':
-            self.required_entries.remove("Materiał")
-            self.required_entries.remove("Średnica")
-
-        elif value == 'Szkice do robót zanikowych':
-            self.required_entries.remove("Materiał")
-            self.required_entries.remove("Średnica")
-            self.required_entries.remove("Data dokumentu")
-
-        elif value == 'Wyniki badania wody':
-            self.required_entries.remove("Materiał")
-            self.required_entries.remove("Średnica")
-            self.rodzaj_przewodu_var.set('wodociągowa')
-            self.labeled_entries["Rodzaj przewodu"].config_entry(state="disabled")
-
-        elif value == 'Wyniki prób ciśnieniowych':
-            self.rodzaj_przewodu_var.set('wodociągowa')
-            self.labeled_entries["Rodzaj przewodu"].config_entry(state="disabled")
-
-        elif value == 'Dokument tekstowy':
-            pass
-
-        elif value == 'Multimedia':
-            pass
-
-        elif value == 'Mapa z zakresem monitoringu':
-            self.required_entries.remove("Data dokumentu")
-
-        elif value == 'Protokoły odbioru końcowego':
-            pass
-
-        elif value == 'Protokoły odbioru końcowego przyłączy':
-            self.typ_przewodu_var.set('przyłącze')
-            self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
-
-        elif value == 'Mapy pomiaru powykonawczego sieci':
-            self.typ_przewodu_var.set('sieć')
-            self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
-
-        elif value == 'Mapy pomiaru powykonawczego przyłaczy':
-            self.typ_przewodu_var.set('przyłącze')
-            self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
-
-        elif value == 'Zlecenie montażu wodomierza':
-            self.required_entries.remove("Materiał")
-            self.required_entries.remove("Średnica")
-            self.typ_przewodu_var.set('przyłącze')
-            self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
-            self.rodzaj_przewodu_var.set('wodociągowa')
-            self.labeled_entries["Typ przewodu"].config_entry(state="disabled")
-
-        elif value == 'Niesklasyfikowane':
-            self.required_entries.remove("Materiał")
-            self.required_entries.remove("Średnica")
-            self.required_entries.remove("Rodzaj przewodu")
-            self.required_entries.remove("Typ przewodu")
-            self.required_entries.remove("Data dokumentu")
-
         for key, labeledEntry in list(self.labeled_entries.items()):
-            if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
-                if key not in self.required_entries:
                     if key not in self.folder_required_entries:
-                        labeledEntry.destroy()
-                        self.labeled_entries.pop(key)
+                        if key not in self.folder_possible_entries:
+                            labeledEntry.destroy()
+                            self.labeled_entries.pop(key)
+
+        if self.folder_type_var.get() == 'NI':
+            entryListNI = filename_generator.get_int_list(self.folder_type_var.get(), self.doc_type_var.get(), value)
+
+            fieldsNI = [
+                ("Numer inwentarzowy", entryListNI[0]),
+                ("Numer księgi inwentarzowej", entryListNI[1]),
+                ("Numer teczki EW", entryListNI[2]),
+                ("Data dokumentu", entryListNI[3]),
+                ("Numer dokumentu", 2),
+            ]
+
+            for field, value in fieldsNI:
+                if value != 0:
+                    self.create_file_entries(field)
+                    if value == 2:
+                        self.required_entries.append(field)
+        else:
+
+            entryList = filename_generator.get_int_list(self.folder_type_var.get(), self.doc_type_var.get(), value)
+
+            fields = [
+                ("Materiał", entryList[1]),
+                ("Średnica", entryList[2]),
+                ("Rodzaj przewodu", entryList[3]),
+                ("Typ przewodu", entryList[4]),
+                ("Data dokumentu", entryList[5]),
+            ]
+
+            for field, value in fields:
+                self.process_field(field, value)
+
+
+
+
+        if self.folder_type_var.get() == 'KSA' or self.folder_type_var.get() == 'UL':
+            self.create_file_entries("Numer dokumentu")
+            self.required_entries.append("Numer dokumentu")
 
         for key in self.required_entries:
             self.labeled_entries[key].config_entry(highlightbackground="blue", highlightthickness=1)
+
+    def process_field(self, field, value):
+        if value != 0:
+            self.create_file_entries(field)
+            if value == 2:
+                self.required_entries.append(field)
+            elif isinstance(value, str):
+                if field == "Rodzaj przewodu":
+                     self.rodzaj_przewodu_var.set(value)
+                elif field == "Typ przewodu":
+                     self.typ_przewodu_var.set(value)
+                self.labeled_entries[field].config_entry(state="disabled")
+
+
 
     def bind_materials(self):
         # Materiały
@@ -848,21 +860,22 @@ class Application(TkinterDnD.Tk):
     def update_subgroup(self, value):
         self.subgroup_var.set('')  # Resetowanie wyboru w `Podgrupa dokumentów`
 
+
         for key, labeledEntry in list(self.labeled_entries.items()):
-            if key not in ["Rodzaj teczki dokumentów", "Typ dokumentacji", "Podgrupa dokumentów"]:
                     if key not in self.folder_required_entries:
-                        labeledEntry.destroy()
-                        self.labeled_entries.pop(key)
+                        if key not in self.folder_possible_entries:
+                            labeledEntry.destroy()
+                            self.labeled_entries.pop(key)
 
         if"Podgrupa dokumentów" in self.labeled_entries:
             self.labeled_entries["Podgrupa dokumentów"].clear()
-
-        subgroup_options = filename_generator.get_subgroup(value)
+        sub_group_value = self.labeled_entries["Rodzaj teczki dokumentów"].get_value()
+        subgroup_options = filename_generator.get_subgroup(sub_group_value,value)
         for option in subgroup_options:
             self.labeled_entries["Podgrupa dokumentów"].get_menu().add_command(label=option, command=tk._setit(self.subgroup_var, option, self.update_sub_subgroup))
 
     def update_sub_subgroup(self, value, *args):
-        self.update_entries_file(value)
+        self.update_entries_file1(value)
 
     def confirm_material_selection(self, event=None):
         self.confirm_selection(self.labeled_entries["Materiał"], self.listbox_material, 'material')
@@ -876,6 +889,52 @@ class Application(TkinterDnD.Tk):
     def update_diameter_entry_background(self):
         self.update_entry_background(self.labeled_entries["Średnica"], self.valid_diameters, self.filtered_diameters, False)
 
+    def add_new_rowDM(self):
+        """Dodaje nowy wiersz z polami dla materiału i średnicy"""
+        row_index = len(self.diameter_and_material_entries) + 1
+
+        # Stwórz pola dla materiału i średnicy
+        material_entry = tk.Entry(self)
+        material_entry.grid(row = row_index + 8, column = 10, padx=10, pady=5)
+        diameter_entry = tk.Entry(self)
+        diameter_entry.grid(row = row_index + 8, column = 8, padx=10, pady=5)
+
+        # Przycisk do usuwania tego wiersza
+        delete_button = tk.Button(self, text="Usuń", command=lambda idx=row_index-1: self.delete_rowDM(idx))
+        delete_button.grid(row=row_index + 8, column=12, padx=10, pady=5)
+
+        # Przechowuj wiersz w liście
+        self.diameter_and_material_entries.append({
+            "material": material_entry,
+            "diameter": diameter_entry,
+            "delete_button": delete_button
+        })
+
+    def delete_rowDM(self, index):
+        """Usuwa dany wiersz na podstawie indeksu"""
+        row_entries = self.diameter_and_material_entries[index]
+
+        # Ukryj i usuń widgety
+        row_entries["material"].grid_remove()
+        row_entries["diameter"].grid_remove()
+        row_entries["delete_button"].grid_remove()
+
+        # Usuń wiersz z listy
+        self.diameter_and_material_entries.pop(index)
+
+        # Przestaw pozostałe wiersze i zaktualizuj ich przyciski
+        self.reposition_rowsDM()
+
+    def reposition_rowsDM(self):
+        """Przestawia pozostałe wiersze po usunięciu jednego z nich i aktualizuje ich indeksy"""
+        for i, row_entries in enumerate(self.diameter_and_material_entries):
+            row_index = i + 9
+            row_entries["material"].grid(row=row_index, column=10, padx=10, pady=5, sticky="w")
+            row_entries["diameter"].grid(row=row_index, column=8, padx=10, pady=5, sticky="w")
+
+            # Aktualizacja przycisku "Usuń", by używał nowego indeksu
+            row_entries["delete_button"].config(command=lambda idx=i: self.delete_rowDM(idx))
+            row_entries["delete_button"].grid(row=row_index, column=12, padx=10, pady=5)
 
 def format_number(max_digits, number_entry):
         try:
