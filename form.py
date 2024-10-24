@@ -41,16 +41,19 @@ class Application(TkinterDnD.Tk):
         self.info = {}
         self.skip_empty = 1
 
+        self.last_clicked = 0
+        self.material_entry_id = 0
+
         self.labeled_entries = {}
 
-        self.diameter_and_material_entries = []
+        self.diameter_and_material_entries = {}
 
         # Przycisk dodawania nowego wiersza
         self.add_button = tk.Button(self, text="Dodaj nowy", command=self.add_new_rowDM)
         self.add_button.grid(row=8, column=9, pady=10, padx=10)
 
-        # Pierwszy wiersz z materiałem i średnicą
-        self.add_new_rowDM()
+        # # Pierwszy wiersz z materiałem i średnicą
+        # self.add_new_rowDM()
 
         self.required_entries = []
         self.folder_required_entries = []
@@ -261,8 +264,12 @@ class Application(TkinterDnD.Tk):
         except ValueError:
             return []  # Jeśli wpisany tekst nie może być przekonwertowany na liczbę
 
-    def show_material_listbox(self, event):
-        typed_text = self.labeled_entries["Materiał"].get_value()
+    def show_material_listbox(self, event, index):
+        self.last_clicked = index
+        print (index)
+
+        entry = self.diameter_and_material_entries[index]["material"]
+        typed_text = entry.get()
         self.listbox_material.delete(0, tk.END)
 
         if typed_text:
@@ -275,7 +282,7 @@ class Application(TkinterDnD.Tk):
                 self.listbox_material.insert(tk.END, item)
 
         self.update_listbox_height(self.listbox_material)
-        self.update_material_entry_background()
+        self.update_material_entry_background(entry)
         self.listbox_material.grid()
 
     def show_diameter_listbox(self, event):
@@ -324,35 +331,36 @@ class Application(TkinterDnD.Tk):
     def confirm_selection(self, entry_widget, listbox_widget, entryName):
         if self.selected_index is not None:
             selected = listbox_widget.get(self.selected_index)
-            entry_widget.insert(selected)
+            entry_widget.delete(0, tk.END)
+            entry_widget.insert(0, selected)
             listbox_widget.grid_remove()  # Hide Listbox after selection
             self.selected_index = None  # Reset selection
             if entryName == 'material':
-                self.update_material_entry_background()
+                self.update_material_entry_background(entry_widget)
             else:
                 self.update_diameter_entry_background()
 
     def update_entry_background(self, entry_widget, valid_items, filtered_items, isString):
-        typed_text = entry_widget.get_value()
+        typed_text = entry_widget.get()
 
         if typed_text != '' and typed_text != '1':
             if isString:
                 if typed_text in valid_items:
-                    entry_widget.config_entry(bg="lightgreen")
+                    entry_widget.config(bg="lightgreen")
                 elif any(typed_text.lower() in item.lower() for item in filtered_items):
-                    entry_widget.config_entry(bg="lightyellow")
+                    entry_widget.config(bg="lightyellow")
                 else:
-                    entry_widget.config_entry(bg="lightcoral")
+                    entry_widget.config(bg="lightcoral")
             else:
                 try:
                     typed_diameter = int(typed_text)
                     if typed_diameter in valid_items:
-                        entry_widget.config_entry(bg="lightgreen")
+                        entry_widget.config(bg="lightgreen")
                     else:
-                        entry_widget.config_entry(bg="lightcoral")
+                        entry_widget.config(bg="lightcoral")
                 except ValueError:
                     # Jeśli wprowadzone dane nie są liczbą
-                    entry_widget.config_entry(bg="lightcoral")
+                    entry_widget.config(bg="lightcoral")
 
     def check_entry(self, labeledEntry, dictionary):
         typed_text = labeledEntry.get_value()
@@ -511,11 +519,11 @@ class Application(TkinterDnD.Tk):
         if value == "Materiał":
             if "Materiał" not in self.labeled_entries or not self.labeled_entries["Materiał"]:
                 self.labeled_entries["Materiał"] = LabeledEntry(self, "Materiał", 10, 8)
-                self.bind_materials()
+                #self.bind_materials()
         if value == "Średnica":
             if "Średnica" not in self.labeled_entries or not self.labeled_entries["Średnica"]:
                 self.labeled_entries["Średnica"] = LabeledEntry(self, "Średnica", 10, 10)
-                self.bind_diameters()
+                #self.bind_diameters()
         if value == "Rodzaj przewodu":
             if "Rodzaj przewodu" not in self.labeled_entries or not self.labeled_entries["Rodzaj przewodu"]:
                 self.labeled_entries["Rodzaj przewodu"] = LabeledOptionMenu(
@@ -616,12 +624,13 @@ class Application(TkinterDnD.Tk):
 
 
 
-    def bind_materials(self):
+    def bind_materials(self, materialEntry):
         # Materiały
-        self.labeled_entries["Materiał"].bind('<KeyRelease>', self.show_material_listbox)
-        self.labeled_entries["Materiał"].bind('<Button-1>', self.show_material_listbox)
-        self.labeled_entries["Materiał"].bind('<KeyRelease>', self.show_material_listbox)
-        self.labeled_entries["Materiał"].bind('<Button-1>', self.show_material_listbox)
+        materialEntry.bind('<KeyRelease>',  lambda event, idx=self.material_entry_id: self.show_material_listbox(event, idx))
+        materialEntry.bind('<Button-1>',  lambda event, idx=self.material_entry_id: self.show_material_listbox(event, idx))
+        self.material_entry_id +=1
+        #materialEntry.bind('<KeyRelease>', self.show_material_listbox, lambda event, idx=len(self.diameter_and_material_entries)-1: self.show_material_listbox(event, idx))
+        #materialEntry.bind('<Button-1>', self.show_material_listbox, lambda event, idx=len(self.diameter_and_material_entries)-1: self.show_material_listbox(event, idx))
         self.listbox_material.bind('<ButtonRelease-1>', lambda event: self.highlight_selection(event, self.listbox_material))
         self.listbox_material.bind('<Return>', self.confirm_material_selection)
         self.listbox_material.bind('<Double-Button-1>', self.confirm_material_selection)
@@ -877,11 +886,13 @@ class Application(TkinterDnD.Tk):
     def update_sub_subgroup(self, value, *args):
         self.update_entries_file1(value)
 
-    def confirm_material_selection(self, event=None):
-        self.confirm_selection(self.labeled_entries["Materiał"], self.listbox_material, 'material')
+    def confirm_material_selection(self,event=None):
+        index = self.last_clicked
+        self.confirm_selection(self.diameter_and_material_entries[index]["material"], self.listbox_material, 'material')
 
-    def update_material_entry_background(self):
-        self.update_entry_background(self.labeled_entries["Materiał"], self.valid_materials, self.filtered_materials, True)
+
+    def update_material_entry_background(self, entry):
+        self.update_entry_background(entry, self.valid_materials, self.filtered_materials, True)
 
     def confirm_diameter_selection(self, event=None):
         self.confirm_selection(self.labeled_entries["Średnica"], self.listbox_diameter, 'diameter')
@@ -892,23 +903,26 @@ class Application(TkinterDnD.Tk):
     def add_new_rowDM(self):
         """Dodaje nowy wiersz z polami dla materiału i średnicy"""
         row_index = len(self.diameter_and_material_entries) + 1
-
+        row_id = self.material_entry_id
         # Stwórz pola dla materiału i średnicy
         material_entry = tk.Entry(self)
         material_entry.grid(row = row_index + 8, column = 10, padx=10, pady=5)
+
+        self.bind_materials(material_entry)
+
         diameter_entry = tk.Entry(self)
         diameter_entry.grid(row = row_index + 8, column = 8, padx=10, pady=5)
 
         # Przycisk do usuwania tego wiersza
-        delete_button = tk.Button(self, text="Usuń", command=lambda idx=row_index-1: self.delete_rowDM(idx))
+        delete_button = tk.Button(self, text="Usuń", command=lambda idx=row_id: self.delete_rowDM(idx))
         delete_button.grid(row=row_index + 8, column=12, padx=10, pady=5)
 
         # Przechowuj wiersz w liście
-        self.diameter_and_material_entries.append({
+        self.diameter_and_material_entries[row_id] = {
             "material": material_entry,
             "diameter": diameter_entry,
             "delete_button": delete_button
-        })
+        }
 
     def delete_rowDM(self, index):
         """Usuwa dany wiersz na podstawie indeksu"""
@@ -927,7 +941,7 @@ class Application(TkinterDnD.Tk):
 
     def reposition_rowsDM(self):
         """Przestawia pozostałe wiersze po usunięciu jednego z nich i aktualizuje ich indeksy"""
-        for i, row_entries in enumerate(self.diameter_and_material_entries):
+        for i, row_entries in self.diameter_and_material_entries.items():
             row_index = i + 9
             row_entries["material"].grid(row=row_index, column=10, padx=10, pady=5, sticky="w")
             row_entries["diameter"].grid(row=row_index, column=8, padx=10, pady=5, sticky="w")
